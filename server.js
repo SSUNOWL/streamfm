@@ -261,16 +261,9 @@ app.get('/index/:roomId', async(req, res) => {
 })
 
 app.get('/suggest/:id', async(req, res) => {
-  try {
-    var Suggestions = await youtubesearchapi.GetVideoDetails(req.params.id)
-    res.send(Suggestions)
-  } catch(err) {
-    var Suggestions = await youtubesearchapi.GetListByKeyword(req.params.id)
-    
-    res.status(400).json({error: err.message,error_line: err.stack});
-
-    
-  }
+  
+  var result = await youtubesearchapi.GetVideoDetails(req.params.id)
+  res.send(result)
 })  
 
 
@@ -331,6 +324,7 @@ app.post('/start', async(req, res) => {
           }
         }
 
+      
         var suggest = await youtubesearchapi.GetVideoDetails(urlparams.get('v'))
         
         playlist.push({videoId : urlparams.get('v'), title : video.title, length : parseInt(timeto(video.length.simpleText))})
@@ -366,6 +360,7 @@ app.post('/search', async(req, res) => {
   var result = await youtubesearchapi.GetListByKeyword(req.query.word + 'auto-generated', false, 5, [{type: 'video'}])
   var auto_playlist = []
   var search_playlist = []
+  var playlist = []
 
   for ( var i = 0 ; i < result.items.length ; i++ ){
     if ( result.items[i].isLive == false )
@@ -377,7 +372,7 @@ app.post('/search', async(req, res) => {
       })
   }
 
-  result = await youtubesearchapi.GetListByKeyword(req.query.word, false, 5, [{type: 'video'}])
+  result = await youtubesearchapi.GetListByKeyword(req.query.word + "lyrics", false, 5, [{type: 'video'}])
 
   for ( var i = 0 ; i < result.items.length ; i++ ){
     if ( result.items[i].isLive == false )
@@ -389,17 +384,15 @@ app.post('/search', async(req, res) => {
       })
   }
 
-
   if ( search_playlist.length == auto_playlist.length ){
-    const playlist = search_playlist.reduce((arr, v,i) => {
+    playlist = auto_playlist.reduce((arr, v,i) => {
 
-      return arr.concat(v,auto_playlist[i])
+      return arr.concat(v,search_playlist[i])
       
     }, [])
   } else {
-    var playlist = []
-    Array.prototype.push.apply(playlist, result.list)
-    Array.prototype.push.apply(playlist, result.suggestion)
+    Array.prototype.push.apply(playlist, auto_playlist)
+    Array.prototype.push.apply(playlist, search_playlist)
     shuffle(playlist)
   }
 
@@ -514,6 +507,7 @@ app.post('/delete', async(req, res) => {
   } else {
     res.status(200).send('현재 노래 스킵')
   }
+  
   
 
   io.to(req.body.roomId).emit('delete', {
