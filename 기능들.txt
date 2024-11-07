@@ -1,0 +1,416 @@
+내가 만들 기능 ;;
+라디오FM
+like 디스코드 음악 봇
+------------------------------
+1. 음악을 송출한다. -> 시간값을 조절할 필요는 없음/== 같은 맥락으로 일시정지 필요없음 O
+2. SKIP 기능 다음 노래로 스킵
+3. 노래 추가기능 -> 재생목록으로 넣기 -> pass
+4. 검색? 기능  -> pass
+5. 음량조절O
+6. 시간값 ( 얼마나 남았는가 ) O
+7. 다음 노래 리스트 -> 한가지만
+8. 중간에 들어갔을 때 중간 시간 맞춰서 O
+9. 스트리밍 룸 전체 리스트를 만들어서 아무나 들어올 수 있게 하자
+
+스트리밍 룸을 만들어서
+룸의 곡 리스트에 맞게 송출중임
+
+------------------
+스트리밍 룸을 아무거나 지정받음
+=> 노래를 추가하여 시작하세요! (url주소로 새로운 방을 만들 수 있음 ; 재생목록도 가능)
+=> 만든 사람이 주소를 다른 친구들에게 뿌리면 접속가능
+/index/:roomid로 접속
+
+db ; streamroom에 들어갈 내용
+_id
+현재 재생되고 있는 노래 정보 ( 제목(stream), 총 시간, 노래 시작 시각 +++ 다음 노래 url추가) => 노래가 끝나면 최신화될꺼임
+-> 중간 난입이 되는 사람에게는 db접근을 한번만 함으로써 노래에 접근 할 수 있음
+------------------------------
+iframe src를 서버 단위에서 전송하여 바꾸는게 안됨
+-> 클라이언트 사이드에서 해야될듯
+-> 곡 리스트를 추가하는게 아니라 정보를 가져올때 나오는 자동재생(?)정보를 가지고 다음 노래를 만들자
+따라서 재생 에러시 index.ejs자체를 다시 불러오자 
+; mongo db를 최신화 하는 방식으로 가야됨
+( 재생 중간에 onerror -> index.ejs 새로고침 -> url, started 정보를 가져옴 ; 다시 재생가능)
+( 노래가 끝남 -> io( 노래가 끝났음을 알려줌 ;) -> mongodb다음 노래로 최신화 (url, started정보 ) -> index.ejs 새로고침)
+-> 만약 room에 접속중인 client가 아무도 없다면??
+-> 그냥 둠 ; 만약 노래 하나가 끝나는 시간 이상에 다시 접속함 -> 노래가 끝난 거니까 (skip) 시킴 -> 자연스럽게 다음 노래로 넘어감
+                                                            (서버 사이드에서 확인)
+OR 노래 목록을 만듦 -> ( 노래가 시작된 시간 ; 노래 끝남 예상 시간을 적어둠 ) -> 클라이언트가 접속했을 때 ( 시작시간 < client시간 < 끝 시간 )인 노래를 불러옴
+( 기각 )
+
+mongodb에 저장할 내용 ;
+streamroom - ( _id == roomId, started, end, url, title, next_url, next_title)
+
+
+----> 이렇게 만들면 좋은점
+1. 유튜브 알고리즘을 이용가능 한것
+2. 클라이언트는 이용에 번거로움이 없음 -> 그냥 링크 복붙하고 노래를 들으면 됨
+3. 스킵기능만 만들면됨
+
+
+킹갓 youtube iframe api~!!! 
+
+Nginx란
+http web server(proxy)로 cache, 로드 밸런싱, ucp/udp 프록시 서버
+-> 웹서버인데 iso 7계층 중 4계층 (전송 계층을 담당) 아마두?
+
+이를 제대로 알려면 web server와 WAs의 차이점을 알아야함
+web서버는 웹브라우저 클라이언트로부터 HTTP 요청을 받아들이고 HTML 문서와 같은 웹페이지를 반환하는 컴퓨터 프로그램
+그냥 서버와의 차이점은 HTTP요청을 받아드리고, HTML 문서를 제공하는 것이 있음
+여기서 HTML문서와 같은 웹페이지는 정적 컨텐츠이다.
+-> 정적 컨테츠는 단순 HTML문서, CSS, JS, 이미지, 파일등 즉시 응답가능한 컨텐츠임
+
+WAS는 인터넷 상에서 HTTP 프로토콜을 통해 사용자 컴퓨터나 장치에 애플리케이션을 수행해주는 미들웨어로서, 주로 동적 서버 컨텐츠를 수행하는 것으로 웹서버와 구별이 되며, 주로 데이터베이스 서버와 같이 수행
+-> 웹서버와 웹컨테이너가 합쳐진 형태로서 웹서버 단독으로는 처리 할 수 없는 데이터베이스의 조회나 다양한 로직 처리가 필요한 동적컨텐츠를 제공한다
+-> 따라서 다양한 요구에 맞춰 웹서비스를 제공할 수 있다.
+
+웹 어플리케이션은 요청 처리방식에 따라 나타날 수 있다.
+Client <-> web server <-> was <-> db 
+( web server, was는 따로 생략가능)
+
+결론 web server와 was의 차이는 정적, 동적 컨테츠를 제공한다는 점에서 다르다
+여기서 역할의 차이가 생겨나는 것
+WAS는 DB조회, 다양한 로직 처리에 집중;
+웹서버에서는 정적 컨텐츠 제공을 해야함
+그래야 서버 부하가 방지되므로 효율성이 떨어짐
+
+web server( Nginx ), WAS (Node JS)였고
+Nginx는 정적 컨텐츠를 제공할 뿐아니라, 프록시 서버, 로드밸런서 등의 전송계층에 해당하는 역할을 한다.
+
+
+502 nginx 오류에 대한 고찰
+문제 직면;
+만들어 둔 api중 start(post), index기능이 되지않음
+또한 stream(get) 은 you're not a bot 이라는 예상과 다른 문제에 직면하게됨
+
+원인 추론
+이런 문제(nginx)는 서버의 nginx 로그를 뒤져보면 알 수 있다.
+로그를 봤을 때 
+" upstream prematurely closed connection while reading response header from upstream"
+이라고 나옴
+-> Nginx가 nodejs의 response header을 읽는 중 upstream(nodejs)가 연결을 끊어버림
+이라고 해석가능하다.
+요청에대한 응답의 크기가 커서 Nginx가 읽기 어려워함.
+->> nodejs에서의 연결 시간을 늘려주거나, Nginx에서 읽는 시간을 빠르게 해야됨
+-> nodejs에서의 연결과 Nginx에서의 연결 지속시간을 300초로 늘려놨지만 해결이 되지않음
+(아마도 aws ellastic beanstalk에서 받은 서버의 성능이 좋지 않은 것을 원인이라고 생각함)
+또한 노래의 정보 ; 유튜브 음원을 가져오는 라이브러리 ytdl-core의 용량이 너무 큰 것도 원인이라고 생각함
+
+따라서 ytdl-core를 쓰지않고 youtube iframe api를 사용함
+ytdl-core를 쓰지않고 youtube api를 통해 응답의 크기를 줄이고, 서버에서 응답하던 영상에 대한 정보도 youtube api로 넘김 (client-side )
+
+수정
+- ytdl-core로 정보를 얻는 것 종료
+stream api는 youtube에서 빈 계정을 막기 때문에 종료
+
+youtube-search-api는 정상적으로 구동됨
+------------------
+playlist기능을 공부하고 만들자.
+
+노래가 끝나면 DB는 최신화 해야함
+streamroom db
+-> url, started만 들어가있음
+나머지 데이터는 youtube iframe 에서 가져옴
+
+cue ; 영상을 로드하고 재생이 준비 될떄까지만
+laod ; 영상을 로드하고 재생
+
+같은 맥락; cue playlist -> 재생목록을 로드하고 재생이 준비될떄 까지
+load playlist -> 재생목록을 재생
+
+--->>> 중간에 재생목록에 추가하는 기능이 없음
+db에 따로 추가를 해서 하자
+db에 playlist와 index를 추가하자
+-> playlist(collection 추가) 
+-> 그냥 배열 형태로
+
+셔플안됨
+삭제 index번호중 안되는 것의 번호를 추가
+스킵 player.nextvideo 뿌리고, streamroom index도 +1
+순서 바꾸기 ??
+추가 배열 제일마지막에 추가 
+
+playlist의 배열을 전부 가져옴
+-> 배열에 {제목, id}만 넣어둠
+삭제 ; 배열에서 삭제
+노래 끝남 ; 배열에서 삭제
+순서 바꾸기 ; 
+find가 잘 안될지도?
+
+만일 다음곡이 없다면?
+
+그냥 playlist로 시작하면 getplaylist로 배열의 내용을 전부 db에 박자
+저 많은 곡을 따로 발행하면 더 부하가 올것으로 예상됨
+
+노래가 끝났다
+-> db list의 [0]을 지움
+started 최신화
+
+----------
+스킵 여러 개 -> 우연인듯
+플레이리스트 마지막 실행x
+
+스킵 여러개에 대한 원인
+duration =0
+ended 일때 -> length 내용을 db에 갖고있자 AND 교차검증
+
+
+      length: playerData.lengthSeconds,  //내가 추가함
+
+
+node moudels 에서 추가를 하면 -> 502nginx뜸 nodemodules를 내가 가져와야되려나...
+-> 원인 압축할때 nodemodules( youtube-search-api)를 넣어놨었음 이게 문제인듯
+-> 그냥 npm youtube-search-api를 복붙해서 로컬로 가지고 있자
+---------
+; 추가해서  했는데 aws ec2에서 적용이 안됨
+-> 다른 기능들은 잘 되는데 추가한 기능만 안됨 ; 왜그럴까
+--------> detail api추가해서 확인해보니 playerData 에서 가져오는 정보들이 전부 없음 ; 다른 방법으로 가져와야곘네
+axios 로 가져오는 데이터가 아마도 안되는 것같다.
+fetch -> get으로 가져오려고 했는데 lengthseconds 라는 데이터가 없음
+
+url 로 유튜브에 검색을 해서 정보를 가져오자
+v params를 사용해서 검색을 하면 조금더 정확한듯
+
+
+
+index 에서 새로고침을 하면 영상이 멈추는데 소리가 꺼져있어야함 -> mute opton 추가
+
+appendchild로 node의 위치를 바꿀 수 있다.
+따라서 지울때 이미 옮겨진 위치라서 필요없었음''
+
+
+기능을 만들떄마다 생각해야될것
+-> 방에 있는 사람들에게 공유되어야하는가
+맞다면 io(socket)으로
+아니면 fetch로 정보를 받으면 됨 (response data 로 받기)
+
+해야할 일
+유튜브에서 틀지 못하는 영상 예외처리 O / 영상이 일찍 끝나는 경우 -> golive하도록 함 ( socketid가 여러개의 방에 들어갈 수 있다. socketid room도 만듬)
+현재 스트리밍 중인 streamroom 리스트 start에 추가 O -> room안에 들어가있는 인원수 O
+playlist 수정 ( 삭제, 순서 바꾸기 )  삭제 완    
+suggestion 현재 재생중인 곡으로 바꿔( 추가 ) - suggestion 데이터 계속 추가 O | 마지막곡 나올때 suggestion 추가
+suggestion 중에서 삭제 O
+영상도 보기 ; 영상중에서 품질 조정 -> 못함
+
+-- 그냥 add; load; delete시 list, suggestion전부를 불러오게 해서 다시 불러오게함
+
+로그인 및 권한 // 누가 들어와있는지 리스트 O
+권한 : mongodb에 권한 리스트를 넣어둠. 리스트에 없으면 버튼을 다 빼면 됨.
+권한의 정도 ; 
+all(익명포함); signed(익명x); authorized(계정들중 일부) -> 지금 필요한가? 잘모르겠음 완성할때쯤 넣어두고 싶음
+루프기능 O
+
+유저마다 자기가 시작했던 노래 저장
+
+https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ/featured
+기본 플리들 여기서 추가
+
+유튜브에서 추가한 노래들은 auto-generated로 검색을 하면 나온다고 함
+=> 가수 이름이랑 노래로 나옴
+--> 검색시 나오는 것은 auto-generated랑 그냥 검색이랑 같이나오게 하자
+우선순위는 잘모르겠음
+
+추천 알고리즘을 바꿀필요가 있나? -> 첫단추를 auto-generated로 하면 추천도 그렇게 뜰거같음
+
+같은 기능들 function으로 야무지게 묶기 
+socket.emit O
+playlist, suggestion 정렬 O
+
+suggestion 새롭게 받기
+
+실시간 채팅
+
+보안
+
+css 
+
+데이터사용량 비교 (youtube music vs streamfm)
+
+모바일 url 추가
+https://youtu.be/lcpd95UXz24?si=_oikWet5RcWESZ-A
+https://youtube.com/playlist?list=PL8HkBvkWeS0X4PjI6hCb2NGvdF-UvwKBB&si=ZdwYJ7DMV8McGMgz
+youtu.be/:id 임
+리스트는 같다 
+리스트로 streamroom 만들시 random 재생 섞기 O
+
+-------------------
+삭제 기능
+playlist옆에 버튼 생성
+body ; roomId, videoId
+-> playlist 에서 삭제 videoId 가 같은걸 삭제
+-> 최신화(io) playlist에서 childnode 삭제
+
+----
+버그 모음
+플레이 되지않던 방에 들어갔는데 스킵이 되지않음
+원인 예상 ; join room 이 되지 않은 상태로 보냈을 가능성 OR onended emit 이 되지 않았을 가능성
+-> 해결 그냥 로그인을 하지 않은 경우 ( guest의 경우여서 그랬음 )
+
+플레이 되고 있던 와중 중간에 다음 곡으로 넘어가지 않음
+-> 아마도 io 연결이 끊어졌을 가능성이 있음
+//->> 연결시간을 늘려주는 방식으로 해결해보겠음
+->>> 클라이언트쪽에서 reconnection을 시도하는 방식으로 설정. io 옵션 중에서 reconnect 설정을 추가함 
+-> 그리하니까 연결이 끊겨도 다시 연결이 되고, add-join 까지 잘됨
+-> 해결 안된듯 http://sunjaefirst-env.eba-smph2zex.us-east-1.elasticbeanstalk.com/socket.io/?EIO=4&transport=polling&t=PAvYLOa
+연결됨은 뜨는데 정상작동이 되지 않음
+아마도 핑퐁이 되지 않은 듯함
+502nginx 문제와 함께 해결 된듯함.   
+
+youtube 영상 id를 검색해서 추가하는 방식인데
+실제로 검색했더니 다른 영상이 있는 경우;; 유튜브에 검색했을 때는 잘 나오지만 ;;; youtube search api 에서는 그렇지 않음
+tVIXY14aJms
+s49CT4DTAkw - 유튜브에서도 그렇게 나옴
+-9fC6oDFl5k
+-jeUhW3U7pQ
+-MtKC5wXqdQ
+-------------> getvideodetail 을 뜯어봤음 ; axios 로 youtube videoid에 해당하는 웹페이지를 전면적으로 가져오지만,
+lengthseconds를 제외한 정보만 가져오는 것을 확인함
+title, videoId, 등등 다양한걸 가져올 수 있는데 저것만 안됨
+-> "" 를 넣어서 연산시키는게 나을듯
+add, start 알고리즘 바꿈
+start 
+get by keyword 후 getvideodetail(suggestion 데이터 가져옴)
+keyword - "videoId", videoId 검색해서 요청한 videoId랑 일치하는 검색결과에서 length, title 정보 가져옴
+add
+keyword - "videoId", videoId 검색해서 요청한 videoId랑 일치하는 검색결과에서 length, title 정보 가져옴
+양쪽에서 검색결과가 없다면 ?? 잘모르겠음
+
+(일반검색에서 진행)
+유튜브에서 추가한 노래들은 auto-generated로 검색을 하면 나온다고 함
+=> 가수 이름이랑 노래로 나옴
+
+일반 검색이랑 auto-generated 검색이랑 섞어버림
+5, 5개씩해서 교차시킴
+
+socket.id 가 문자열일때가 있고 아닐떄가 있음 
+
+delete가 원활하게 되지않는 경우
+-> 천천히하면 되긴하는듯?    
+--> 서버에서 response를 보내지 않아서 그럼
+-> 해결
+
+----------------------
+
+room_num : room 안에 몇명의 클라이언트가 연결되어있는지 알려줌
+{
+      roomId : [{
+            socketid : socketid,
+            username : username
+      }]
+}
+
+socketid_room  : 소켓 id가 어느 룸에 연결되어있는지 알려줌
+{
+      socketid : roomId
+}
+
+----------------------------
+!충격!
+start가 되지 않고 있었다
+nginx 111 connection refused
+가설 1
+https://stackoverflow.com/questions/29370360/nodejs-connect-failed-111-connection-refused-while-connecting-to-upstream
+포트번호가 맞지 않아서 이런 경우가 있었다.
+
+2024/10/23 13:20:37 [error] 1012863#1012863: *1257 connect() failed (111: Connection refused) while connecting to upstream, client: 218.155.98.37, server: , request: "GET /start HTTP/1.1", upstream: "http://127.0.0.1:8080/start", host: "sunjaefirst-env.eba-smph2zex.us-east-1.elasticbeanstalk.com", referrer: "http://sunjaefirst-env.eba-smph2zex.us-east-1.elasticbeanstalk.com/start"
+2024/10/23 13:20:38 [error] 1012863#1012863: *1257 connect() failed (111: Connection refused) while connecting to upstream, client: 218.155.98.37, server: , request: "GET /socket.io/?EIO=4&transport=polling&t=PAvYLOa HTTP/1.1", upstream: "http://127.0.0.1:8080/socket.io/?EIO=4&transport=polling&t=PAvYLOa", host: "sunjaefirst-env.eba-smph2zex.us-east-1.elasticbeanstalk.com", referrer: "http://sunjaefirst-env.eba-smph2zex.us-east-1.elasticbeanstalk.com/index/67179ee09135b2a73088c66f"
+
+
+찾아보니 /var/proxy/staging/nginx/conf.d/elasticbeanstalk/
+경로에 00_application.conf 가 있었고, 
+proxy_pass 의 경로가 http://127.0.0.1:8080이었다.
+proxy_connect_timeout 300s;
+proxy_read_timeout 600s;
+proxy_send_timeout 600s;
+proxy_buffers 8 16k;
+proxy_buffer_size 32k;
+와 http:// 경로를 제외해주었다
+서버껐다 키니까 사라짐 -> 8080으로 바꿔주는게 중요했던듯
+
+이후 beanstalk 에서 작업 -> 앱서버 다시시작을 해주었더니 됨.
+
+완
+인줄 알았음
+
+어느 순간 streamroom 하나에서 socket io 의 연결이 끊기고 다음 곡 과 재생중인 곡 delete기능이 되지않음
+( 추가, 다른곡 삭제는 정상적으로 실행됨)
+socketio on으로 들어오면 그냥 연결이 끊김 -> reconnection 을 설정해놔서 다시 연결이 됨
+
+다시 해보니 같은 곳에서 나의 팝 플레이리스트 기준 shivers -> lucky strike가 넘어가지않음
+lcukystrike노래의 정보를 가져오는 과정에서 이상해지는 듯함
+
+lcuky~ghosttown, legendary, light switch, countinstars
+안되는 노래가 존내많음
+maybe getvideodetail이 안먹는듯
+
+1. free -m
+메모리가 부족한가? -> 부족하지 않음
+2. proxy 설정값 확인
+request header ; proxy 대기시간 , 용량 등등 설정했지만 안됨 
+server {
+listen 443 ssl http2;
+client_max_body_size 600M;
+location / {
+proxy_pass http://localhost:4000;
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection 'upgrade';
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_send_timeout 7200s;
+proxy_read_timeout 7200s;
+proxy_buffer_size 64k;
+proxy_buffers 16 32k;
+proxy_busy_buffers_size 64k;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_connect_timeout 300;
+}
+}
+
+정답이었다.
+getvideodetail이 안나오는 이유?를 알고싶다.
+-> getvideodetail이안되면서 nodejs 서버가 껐다 켜지면서 socket 연결도 이상이 생김   
+--> getvideodetail 정보가 필요한 경우 : suggestion 데이터가 필요할때임 (영상의 재생은 videoId만 있으면 잘됨.)
+---> try catch 로 이를 안되는 경우 다른 videoiD로 넘어가서 가져오는 절차로 가는 것.
+----> 제목으로 검색을 해서 다른 영상에서 getvideodetail 하는게 제일 나을듯..
+
+
+sudo systemctl restart nginx
+
+
+res.status(400).json({error: err.message});
+에러 메시지를 모를때는 이걸통해서 client한테 보내자!!!
+{"error":"Cannot read properties of undefined (reading 'title')"}
+
+객체에서 title이 없는데 title을 찾으려고 할때 생긴다고함
+
+youtube-search-api 를 내가 가져와서 수정하는 법을 알아냄
+fork 해서 내 git에 저장을 한뒤 수정을 하는 것
+npm install git+https://github.com/SSUNOWL/youtube-search-api
+를 통해서 git + fork 주소를 통하면 나의 git에 접근 할 수 잇고
+package.json에는 기존 정보가 아닌 나의 git주소가 박혀있음
+
+해결!!!!!!
+player data는 원래 안되고, firstcontent에서 가져오는 제목, islive정보 등등 제공되지 않는 것을 확인
+이 때문에 cannot read properties of undefined라는 오류가 생기면서 서버가 터짐 -> 502 -> 서버 복구를 거치는 것으로 종결
+502가 그냥 서버가 터져서 (오류가 생겨서) 생기는 것임을 알게되었다.
+또한 ec2 dos화면에서 
+/var/app/current 경로에 내가 올린 정보들이 다 들어가있음 (local환경)
+ps -ef | grep node      
+이를 수정하고 kill -9 pid 진행하면 앱서버를 다시 껐다켜서 수정사항 조치를 할 수 도 있다.
+
+결론 : suggestion 정보를 가져올수있다. 
+
+
+참고
+https://develop-const.tistory.com/40
+
+-----------------
+한무 suggestion 기능
+방에 대한 keywords를 수집 -> keywords의 합으로 검색 -> 첫번째 영상으로 suggestion
+suggestion에 곡이 없어졌을때 suggestion에 추가하도록 하자
+keyword 수정 ( 추가 삭제 )
