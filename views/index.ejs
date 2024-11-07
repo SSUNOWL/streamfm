@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+  <link href="/main.css" rel="stylesheet">
+
+  <body>
+    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+    <body class="grey-bg">
+      <%- include('nav.ejs') %>
+      <div class="constainer">
+        <div class="title"><h4></h4></div>
+        <span class="is_connect"><h4></h4></span>
+
+        <div class="user_list">
+          
+        </div>
+        <div class="now_playing"></div>
+        <div class="player" id="player"></div>
+
+        <div class="playhead">
+          <div id="ctime"></div>
+          <div class="progress">
+              <div class="progress_filled"></div>
+          </div>
+          <div id="time"></div>
+          <button onclick="golive()">Live</button>
+          <button onclick="skip()">다음 곡</button>
+          <span>video : <input onclick="view()" type="checkbox" class="view"></span>
+          
+          <h2>volume</h2>
+          <input id="mute_btn" type="button" value="음소거 해제">
+          <input id="volume_bar" type="range" value="<%= data.volume %>" min="0" step="1" max="100" oninput="play_volume()">   
+        </div>
+      </div>
+      <div class="container">
+        <div class="playlist">
+          <span>
+          <h4>playlist</h4>
+          <span>Loop: </span>
+          <% if ( data.loop ){ %>
+          <input class="loop" type="checkbox" checked>
+          <% } else {%>
+          <input class="loop" type="checkbox">
+          <% } %>
+          </span>
+        <% for ( var i = 0 ; i < data.list.length ; i++ ) { %>
+          <div id="<%= data.list[i].videoId %>" >
+          <div> <%= data.list[i].title %> <%= data.secto(data.list[i].length) %> </div>
+          <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
+          </div>
+        <% } %>
+        </div>
+        <div>----------------------</div>
+        <div class="suggestion">
+          <h4>suggestion</h4>
+        <% for ( var i = 0 ; i < data.suggestion.length ; i++ ) { %>
+          <div id="<%= data.suggestion[i].videoId %>" >
+          <div> <%= data.suggestion[i].title %> <%= data.secto(data.suggestion[i].length) %> </div>
+          <input type="button" value="추가" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>" data-suggest=true class="suggest_add_btn">
+          <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>">
+          </div>
+        <% } %>
+        </div>
+      </div>
+        <div class="container">
+          <div>
+            <input class="word" type="text">
+            <input class="submit" value="검색" type="button" onclick="search_word()">
+            <div class="search_result"></div>
+          </div>
+        </div>
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+
+    <script>
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      
+      var player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          height: '360',
+          width: '640',
+          videoId: "<%= data.videoId %>",
+          playerVars: { 'autoplay': 1, 'controls': 0 },
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange,
+            'onError' : onPlayerError
+          }
+        });
+      }
+      const socket = io({
+        reconnection: true,
+        reconnectionAttempts: 5,
+      })
+    
+      // socket.emit('add-join', { roomId : `<%= data.roomId %>`})
+
+
+      // 4. The API will call this function when the video player is ready.
+      function onPlayerReady(event) {
+        var now = new Date()
+        var started = new Date('<%= data.started %>')
+        
+        event.target.seekTo(parseInt((now - started) / 1000 ))
+        event.target.mute()
+        event.target.playVideo();
+        event.target.setVolume(`<%= data.volume %> `);
+        document.querySelector('.title').querySelector('h4').innerText = "<%= data.title %>"
+        document.querySelector('.now_playing').innerText = `<%= data.videoId %>`
+        document.getElementById('time').innerText = secto(`<%= data.length %>`)
+
+        golive()
+      }
+
+      // 5. The API calls this function when the player's state changes.
+      //    The function indicates that when playing a video (state=1),
+      //    the player should play for six seconds and then stop.
+      var done = false;
+      function onPlayerStateChange(event) {
+
+        console.log(event.target.getPlayerState())
+        // socket.emit('log', { roomId : `<%= data.roomId %>`, player_state : event.target.getPlayerState(), duration: event.target.getDuration()})
+
+        
+
+
+        if ( event.target.getPlayerState() == 0 ) {
+            // socket.emit('onended', {
+            //   roomId : '<%= data.roomId %>',
+            //   videoId : document.querySelector('.now_playing').innerText,
+            //   duration : player.getDuration(),
+            //   deleted : false,
+            //   skip : false,
+            // })
+            emit_onended(false, false)
+            //끝나면 실행
+        }
+      }
+
+      function onPlayerError(event) {
+        console.log(event.data)
+        if ( event.data == 101 || event.data == 150) {
+          
+          console.log('동영상 소유자가 재생하지 못하게함')
+          skip()
+        } else {
+          console.log("네트워크 오류")
+        }
+        
+      }
+
+      socket.on('connect', () => {
+        var now = new Date()
+        console.log(now + '연결됨')
+        socket.emit('add-join', { roomId : `<%= data.roomId %>`})
+        document.querySelector('.is_connect').querySelector('h4').innerText = "connected!"
+        golive()
+      })
+            
+      socket.on('disconnect', () => {
+        var now = new Date()
+        console.log(now + "연결이 끊김")
+        document.querySelector('.is_connect').querySelector('h4').innerText = "연결이 끊겼습니다. 페이지를 새로고침 해주세요"
+
+      })
+
+      socket.on('connected', (data) => {
+        document.querySelector('.user_list').innerHTML = ""
+        for ( var i = 0 ; i < data.room_num.length ; i++) {
+          var id_div = document.createElement("div")
+          id_div.setAttribute('class', "white-bg")
+          id_div.setAttribute('id', data.room_num[i].socketid)
+          var div = document.createElement('div')
+          div.innerText = data.room_num[i].username
+          id_div.appendChild(div)
+          document.querySelector('.user_list').appendChild(id_div)
+
+        }
+      })
+
+      socket.on('disconnected', (data) => {
+        document.querySelector('.user_list').removeChild(document.getElementById(data.socketid))
+
+      })
+
+      socket.on("error", (error) => {
+        console.error(error)
+      })
+
+      socket.on('load', (data) => {
+            // console.log(data.detail)
+            var playlist = document.querySelector('.playlist')
+            var suggestion = document.querySelector('.suggestion')
+            var nextId = data.videoId
+            player.loadVideoById(data.videoId)
+            document.querySelector('.title').querySelector('h4').innerText = data.title
+            document.querySelector('.now_playing').innerText = nextId
+            document.getElementById('time').innerText = secto(data.length)
+
+            refresh(data.list, data.suggestion)
+            
+      })
+
+      var setI = setInterval(() => {      
+        const percent = (player.getCurrentTime()/player.getDuration())*100
+        const progressBar = document.querySelector('.progress_filled')
+        progressBar.style.flexBasis = `${percent}%`;
+        
+        const ctime = document.getElementById('ctime')
+        ctime.innerText = secto(player.getCurrentTime())
+      }, 1000)
+
+      function search_word() {
+        document.querySelector('.search_result').innerHTML =""
+
+        var word = document.querySelector('.word').value
+        fetch(`/search?word=${word}`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'}
+        }).then(async(r) => {
+          if ( r.status == 200) {
+            var result = await r.text()
+            result = JSON.parse(result)
+            for ( var i = 0 ; i < result.length ; i++ ) {
+              var box = document.createElement('div')
+              box.setAttribute('id', result[i].Id)
+
+              var div = document.createElement('div')
+              div.innerText = result[i].Title + " | " + result[i].channelTitle + " | "+ result[i].length
+              box.appendChild(div)
+
+              var add_btn = document.createElement("input")
+              add_btn.setAttribute('type', "button")
+              add_btn.setAttribute('value', "추가")
+              add_btn.setAttribute('data-videoId', result[i].Id)
+              add_btn.setAttribute('data-title', result[i].Title)
+              add_btn.setAttribute('data-length', parseInt(timeto(result[i].length)))
+              add_btn.setAttribute('data-suggest', false)
+              add_btn.setAttribute('class', "add_btn")
+              box.appendChild(add_btn)
+              document.querySelector('.search_result').appendChild(box)
+
+            }
+            for ( var btn of document.querySelectorAll('.add_btn') ) {
+            btn.addEventListener('click', add_song)
+
+            }
+          } else {
+            var result = await r.text()
+
+            document.querySelector('.search_result').innerText = result
+          }
+        })
+
+      }
+
+      for ( var btn of document.querySelectorAll('.suggest_add_btn') ) {
+          btn.addEventListener('click', add_song)
+
+      }
+
+      for ( var btn of document.querySelectorAll('.delete_btn')) {
+        btn.addEventListener('click', delete_song)
+      }
+
+      function add_song(e) {
+        fetch(`/add`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'},
+            body : JSON.stringify({
+              roomId : `<%= data.roomId %>`,
+              videoId : e.target.dataset.videoid,
+              title : e.target.dataset.title,
+              length : e.target.dataset.length,
+              suggest : e.target.dataset.suggest
+            })
+        })
+      } 
+
+      function delete_song(e) {
+        fetch('/delete', {
+          method : 'POST',
+          headers : {'Content-Type' : 'application/json'},
+          body : JSON.stringify({
+              roomId : `<%= data.roomId %>`,
+              videoId : e.target.dataset.videoid,
+              title : e.target.dataset.title,
+              length : e.target.dataset.length,
+              suggest : (document.querySelector('.suggestion') == e.target.parentNode.parentNode)
+          })
+        })
+      }
+
+      socket.on('add', (data) => {
+        console.log(data)
+        var playlist = document.querySelector('.playlist')
+        var suggestion = document.querySelector('.suggestion')
+        var search = document.querySelector('.search_result')
+        if (data.suggest == "false") {
+          data.suggest = false
+        } else {
+          data.suggest = true
+        }
+        if ( search.children[data.videoId]) {
+          if ( !data.suggest ) {
+            search.removeChild(search.children[data.videoId])
+          }
+        }
+        refresh(data.list, data.suggestion)
+        
+        
+      })
+      
+      socket.on('delete', (data) => {
+        var playlist = document.querySelector('.playlist')
+        var suggestion = document.querySelector('.suggestion')
+
+        if ( data.isskip ) {
+          emit_onended(true, true)
+        } else {
+          // if (playlist.children[data.videoId]) {
+          //   playlist.removeChild(playlist.children[data.videoId])
+
+          // } else if ( suggestion.children[data.videoId]) {
+          //   suggestion.removeChild(suggestion.children[data.videoId])
+          // }
+            refresh(data.list, data.suggestion)
+        }
+      })
+      
+      socket.on('golive', (data) => {
+        golive()
+      })
+
+      function skip() {
+        emit_onended(true, false)
+      }
+
+      function golive() {
+        fetch(`/golive`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'},
+            body : JSON.stringify({
+              roomId : `<%= data.roomId %>`
+            })
+        }).then(async(r) => {
+
+          var result = await r.text()
+          result = JSON.parse(result)       
+          player.playVideo();
+             
+          var now = new Date()
+          var started = new Date(result)
+          player.seekTo(parseInt((now - started) / 1000 ))
+
+          
+        })
+      }
+      
+      document.querySelector('.loop').addEventListener('change', () => {
+        var loop_btn = document.querySelector('.loop')
+
+        fetch(`/loop`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'},
+            body : JSON.stringify({
+              roomId : `<%= data.roomId %>`,
+              loop : loop_btn.checked
+            })
+        })  
+        
+      })
+
+      socket.on('loop', (data) => {
+        document.querySelector('.loop').checked = data.loop
+      })
+
+      function play_volume(e) {
+        var play_volume = document.getElementById('volume_bar').value
+        player.setVolume(play_volume)
+        player.unMute()
+        if (player.isMuted()) {
+          player.unMute()
+          document.getElementById('mute_btn').value = "음소거"
+        }
+        fetch(`/update_volume?volume=${play_volume}`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'}
+        })       
+      }
+
+      document.getElementById('mute_btn').addEventListener('click', () => {
+        if (player.isMuted()) {
+          player.unMute()
+          document.getElementById('mute_btn').value = "음소거"
+        } else {
+          player.mute()
+          document.getElementById('mute_btn').value = "음소거 해제"
+
+        }
+      })
+
+      function view() {
+        if (document.querySelector('.view').checked ) {
+          document.querySelector(".player").style['display'] = 'block'
+        } else {
+          document.querySelector('.player').style['display'] = 'none'
+        }
+      }
+
+      function emit_onended(skip, deleted) {
+        socket.emit('onended', {
+          roomId : '<%= data.roomId %>',
+          videoId : document.querySelector('.now_playing').innerText,
+          duration : player.getDuration(),
+          skip : skip,
+          deleted : deleted
+        })
+      }
+
+      function refresh(PL, SGT) { //add, load시 playlist, suggestion 새로고침
+        var playlist = document.querySelector('.playlist')
+        var suggestion = document.querySelector('.suggestion')
+        var h4 = playlist.firstElementChild
+        playlist.innerHTML = ""
+        playlist.appendChild(h4)
+        h4 = suggestion.firstElementChild
+        suggestion.innerHTML = ""
+        suggestion.appendChild(h4)
+        
+        for ( var i = 0 ; i < PL.length ; i++) {
+          var div_id = document.createElement('div')
+          var div = document.createElement('div')
+          div_id.setAttribute('id', PL[i].videoId)
+          div.innerText = PL[i].title + " " + secto(PL[i].length)
+
+          var delete_btn = document.createElement('input')
+          delete_btn.setAttribute('value', '삭제')
+          delete_btn.setAttribute('type', 'button')
+          delete_btn.setAttribute('class', 'delete_btn')
+          delete_btn.setAttribute('data-videoid', PL[i].videoId)
+          delete_btn.setAttribute('data-title', PL[i].title)
+          delete_btn.setAttribute('data-length', PL[i].length)
+
+          delete_btn.addEventListener('click', delete_song)
+
+          div_id.append(div, delete_btn)
+          playlist.appendChild(div_id )
+
+        }
+        for ( var i = 0 ; i < SGT.length ; i++) {
+          var div_id = document.createElement('div')
+          var div = document.createElement('div')
+          div_id.setAttribute('id', SGT[i].videoId)
+          div.innerText = SGT[i].title + " " + secto(SGT[i].length)
+
+          var add_btn = document.createElement('input')
+          add_btn.setAttribute('value', '추가')
+          add_btn.setAttribute('type', 'button')
+          add_btn.setAttribute('class', 'suggest_add_btn')
+          add_btn.setAttribute('data-videoid', SGT[i].videoId)
+          add_btn.setAttribute('data-title', SGT[i].title)
+          add_btn.setAttribute('data-length', SGT[i].length)
+          add_btn.setAttribute('data-suggest', 'true')
+          add_btn.addEventListener('click', add_song)
+
+
+          var delete_btn = document.createElement('input')
+          delete_btn.setAttribute('value', '삭제')
+          delete_btn.setAttribute('type', 'button')
+          delete_btn.setAttribute('class', 'delete_btn')
+          delete_btn.setAttribute('data-videoid', SGT[i].videoId)
+          delete_btn.setAttribute('data-title', SGT[i].title)
+          delete_btn.setAttribute('data-length', SGT[i].length)
+
+          delete_btn.addEventListener('click', delete_song)
+
+          div_id.append(div, add_btn, delete_btn)
+
+
+          suggestion.appendChild(div_id )
+        }
+      }
+
+      function secto(seconds) {
+          seconds = parseInt(seconds)
+          var hour = parseInt(seconds/3600) < 10 ? '0' + parseInt(seconds/3600) : parseInt(seconds/3600);
+          var min = parseInt((seconds%3600)/60) < 10 ? '0' + parseInt((seconds%3600)/60) : parseInt((seconds%3600)/60);
+          var sec = seconds%60 < 10 ? '0' + seconds%60 : seconds%60;
+
+          return hour == '00' ? min + ":" + sec : hour + ":" + min + ":" + sec
+        }
+
+      function timeto(timeString) {
+        var a = timeString.match(/:/g).length
+        var hours, minutes, seconds
+        a < 2 ?  ([minutes, seconds] = timeString.split(':').map(Number), hours = 0) :  ([hours, minutes, seconds] = timeString.split(':').map(Number));
+        return hours * 3600 + minutes * 60 + seconds;
+      }
+
+
+    </script>
+  </body>
+</html>

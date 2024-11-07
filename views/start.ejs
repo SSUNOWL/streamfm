@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+  <body class="grey-bg">
+
+    <%- include('nav.ejs') %>
+
+    환영합니다! <%= data.user %>
+    <div> 새롭게 스트리밍 룸을 만든후 시작하세요! </div>
+    <% if ( data.user != "" ) { %>
+    <div>
+      <h4>유튜브 링크로 시작</h4>
+    <form class="form-box" action="/start" method="POST">
+        <input name="url" placeholder="youtube url을 입력하세요">
+        <span>Random: </span><input name="random" type="checkbox">
+        <button type="submit">시작하기</button>
+    </form>
+    </div>
+    <div class="container">
+        <div>
+            <h4>검색해서 시작</h4>
+            <input class="word" type="text">
+            <input class="submit" value="검색" type="button" onclick="search_word()">
+            <div class="search_result"></div>
+        </div>
+      </div>
+    </div>
+    <% } else {%>
+      <a href="/login">로그인 후 시작하세요!</a>
+
+    <% } %>
+
+    <div class="white-bg"> Room List
+      
+      <% if ( data.room_list.length ) { %>
+      <% for ( var i = 0 ; i < data.room_list.length ; i++) { %>
+        
+      <% Array.prototype.push.apply(data.room_list[i].list, data.room_list[i].suggestion) %>
+        <div class="list-box">
+        <% var startat = 0 %>
+        <%  var ended = new Date(data.room_list[i].started.getTime() + (data.room_list[i].list[0].length - 1) * 1000) %>
+        <%  var now = new Date() %>
+        <% if (ended < now) startat = 1 %>
+        <% if ( !data.room_list[i].list[startat] ) startat = 0 %>
+        <a href="/index/<%=data.room_list[i]._id%>"> <%= data.room_list[i].list[startat].title %> </a>
+        <% if ( data.room_list[i].list[startat + 1] ) { %>
+          <span> //next : <%= data.room_list[i].list[startat + 1].title %> </span>
+        <% } %> 
+        <% if(data.room_list[i].room_num) { %>
+          <span>| Viewer : <%= data.room_list[i].room_num %> </span> 
+        <% } else { %>
+          <span>| Viewer : 0 </span> 
+        <% } %>
+        </div>
+      <% } %>
+      <% } else { %>
+        <div>
+          방이 없습니다. 새롭게 시작해주세요!
+        </div>
+      <% } %>
+    </div>
+    </body>
+    <!-- <%= JSON.stringify(data.room_list) %> -->
+
+    <script>
+        
+      function search_word() {
+        document.querySelector('.search_result').innerHTML =""
+
+        var word = document.querySelector('.word').value
+        fetch(`/search?word=${word}`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'}
+        }).then(async(r) => {
+          if ( r.status == 200 ) {
+            var result = await r.text()
+            result = JSON.parse(result)
+            for ( var i = 0 ; i < result.length ; i++ ) {
+                
+              var div = document.createElement('div')
+              div.innerText = result[i].Title + " | " + result[i].channelTitle + " | "+ result[i].length
+              document.querySelector('.search_result').appendChild(div)
+              
+              var add_btn = document.createElement("input")
+              add_btn.setAttribute('type', 'button')
+              add_btn.setAttribute('value', "시작")
+              add_btn.setAttribute('data-videoId', result[i].Id)
+              add_btn.setAttribute('class', "add_btn")
+              document.querySelector('.search_result').appendChild(add_btn)
+
+            }
+            for ( var btn of document.querySelectorAll('.add_btn') ) {
+            btn.addEventListener('click', add_song)
+
+            }
+          } else {
+            var result = await r.text()
+
+            document.querySelector('.search_result').innerText = result
+
+          }
+        })
+
+      }
+
+
+      function add_song(e) {
+        fetch(`/start`, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'},
+            body : JSON.stringify({
+              url : `https://www.youtube.com/watch?v=${e.target.dataset.videoid}`
+            })
+        }).then(function(response) {
+                console.log(response.redirected, response.url)
+                window.location.href = response.url
+            })
+        
+      }
+    </script>
+</body>
+</html>
