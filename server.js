@@ -1,4 +1,4 @@
-
+ 
 const express = require("express");
 const app = express();
 
@@ -389,12 +389,19 @@ app.post('/search', async(req, res) => {
       })
   }
 
-  console.log(auto_playlist, search_playlist)
-  const playlist = search_playlist.reduce((arr, v,i) => {
 
-    return arr.concat(v,auto_playlist[i])
-    
+  if ( search_playlist.length == auto_playlist.length ){
+    const playlist = search_playlist.reduce((arr, v,i) => {
+
+      return arr.concat(v,auto_playlist[i])
+      
     }, [])
+  } else {
+    var playlist = []
+    Array.prototype.push.apply(playlist, result.list)
+    Array.prototype.push.apply(playlist, result.suggestion)
+    shuffle(playlist)
+  }
 
   if ( playlist.length == 0) {
     res.status(300).send('검색결과가 없습니다')
