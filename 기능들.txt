@@ -202,6 +202,10 @@ all(익명포함); signed(익명x); authorized(계정들중 일부) -> 지금 �
 루프기능 O
 
 유저마다 자기가 시작했던 노래 저장
+begin collection 
+{
+      _id, user_id, videoId/playlistId, title, length, suggestion?
+}
 
 https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ/featured
 기본 플리들 여기서 추가

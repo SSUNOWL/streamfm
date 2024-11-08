@@ -275,10 +275,22 @@ app.get('/start', async(req, res) => {
     
   }
   // console.log(result)
-  res.render('start.ejs', {data : {
-    room_list : result,
-    user : req.user ? req.user.username : "",
-  }})
+  
+
+  if ( req.user ) {
+    let song_begin = await db.collection('begin').find({user_id : new ObjectId(req.user.id)}).toArray()
+
+    res.render('start.ejs', {data : {
+      room_list : result,
+      user : req.user ? req.user.username : "",
+      song_begin : song_begin,
+    }})
+  } else {
+    res.render('start.ejs', {data : {
+      room_list : result,
+      user : req.user ? req.user.username : "",
+    }})
+  }
 })
 
 app.post('/start', async(req, res) => {  
@@ -333,6 +345,14 @@ app.post('/start', async(req, res) => {
             suggestion.push({videoId : suggest.suggestion[i].id, title : suggest.suggestion[i].title, length : parseInt(timeto(suggest.suggestion[i].length.simpleText))})
           } 
         }
+
+        await db.collection('begin').insertOne({
+          user_id : new ObjectId(req.user.id),
+          videoId : urlparams.get('v'),
+          title : video.title,
+          length : parseInt(timeto(video.length.simpleText)),
+
+        })
       } 
       var started = Date.now()
 
@@ -460,6 +480,15 @@ app.post('/add', async(req, res) => {
     suggestion : result.suggestion
   }});
 
+  if ( req.user ) {
+    await db.collection('begin').insertOne({
+      user_id : new ObjectId(req.user.id),
+      videoId : req.body.videoId,
+      title : add_song.title, 
+      length : parseInt(timeto(add_song.length.simpleText))
+    })
+  }
+
   res.status(200)
   res.send('추가 완료')
 
@@ -518,6 +547,8 @@ app.post('/delete', async(req, res) => {
   })
 
 })
+
+
 
 io.use((socket, next) => {
   if (socket.request.user) {

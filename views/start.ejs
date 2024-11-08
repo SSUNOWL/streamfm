@@ -30,6 +30,14 @@
         </div>
       </div>
     </div>
+    <% for ( var i = 0 ; i < data.song_begin.length ; i++) { %>
+      <form class="form-box" action="/start" method="POST">
+        <input name="url" type="hidden" value="https://www.youtube.com/watch?v=<%=data.song_begin[i].videoId%>">
+        <span><%= data.song_begin[i].title %></span>
+        <button type="submit">시작하기</button>
+      </form>
+      
+    <% } %>
     <% } else {%>
       <a href="/login">로그인 후 시작하세요!</a>
 
@@ -65,7 +73,7 @@
       <% } %>
     </div>
     </body>
-    <!-- <%= JSON.stringify(data.room_list) %> -->
+    <!-- <%= JSON.stringify(data.song_begin) %> -->
 
     <script>
         
@@ -91,13 +99,11 @@
               add_btn.setAttribute('value', "시작")
               add_btn.setAttribute('data-videoId', result[i].Id)
               add_btn.setAttribute('class', "add_btn")
+              add_btn.addEventListener('click', add_song)
               document.querySelector('.search_result').appendChild(add_btn)
 
             }
-            for ( var btn of document.querySelectorAll('.add_btn') ) {
-            btn.addEventListener('click', add_song)
-
-            }
+            
           } else {
             var result = await r.text()
 
