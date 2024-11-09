@@ -260,10 +260,33 @@ app.get('/index/:roomId', async(req, res) => {
 
 })
 
-app.get('/suggest/:id', async(req, res) => {
+app.post('/new_suggestion', async(req, res) => {
+  var result = await db.collection('streamroom').findOne({_id : new ObjectId(req.body.roomId)})
+  const idx = result.list.findIndex(function(item) {return item.videoId === req.body.videoId}) // findIndex = find + indexOf
   
-  var result = await youtubesearchapi.GetVideoDetails(req.params.id)
-  res.send(result)
+  if (idx > -1) {
+    var suggest = await youtubesearchapi.GetVideoDetails(req.body.videoId)
+    var suggestion = []
+    for ( var i = 0 ; i < suggest.suggestion.length ; i++) {
+      if ( !suggest.suggestion[i].isLive ) {
+        suggestion.push({videoId : suggest.suggestion[i].id, title : suggest.suggestion[i].title, length : parseInt(timeto(suggest.suggestion[i].length.simpleText))})
+      } 
+    }
+  
+    await db.collection('streamroom').updateOne( {_id : new ObjectId(req.body.roomId)}, {$set : {
+      suggestion : suggestion
+    }});
+  
+    res.send(suggestion)
+    io.to(req.body.roomId).emit('new_suggestion', {
+      suggestion_videoId : req.body.videoId,
+      list : result.list,
+      suggestion : suggestion,
+    })
+  } else {
+    res.send('잘못된 videoId')
+  }
+  
 })  
 
 

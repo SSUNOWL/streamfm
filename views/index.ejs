@@ -45,6 +45,7 @@
         <% for ( var i = 0 ; i < data.list.length ; i++ ) { %>
           <div id="<%= data.list[i].videoId %>" >
           <div> <%= data.list[i].title %> <%= data.secto(data.list[i].length) %> </div>
+          <input value="새로운 제안 받기" type="button" class="new_suggest_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
           <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
           </div>
         <% } %>
@@ -267,6 +268,9 @@
       for ( var btn of document.querySelectorAll('.delete_btn')) {
         btn.addEventListener('click', delete_song)
       }
+      for ( var btn of document.querySelectorAll('.new_suggest_btn')) {
+        btn.addEventListener('click', new_suggestion)
+      }
 
       function add_song(e) {
         fetch(`/add`, {
@@ -297,7 +301,7 @@
       }
 
       socket.on('add', (data) => {
-        console.log(data)
+        // console.log(data)
         var playlist = document.querySelector('.playlist')
         var suggestion = document.querySelector('.suggestion')
         var search = document.querySelector('.search_result')
@@ -323,14 +327,24 @@
         if ( data.isskip ) {
           emit_onended(true, true)
         } else {
-          // if (playlist.children[data.videoId]) {
-          //   playlist.removeChild(playlist.children[data.videoId])
-
-          // } else if ( suggestion.children[data.videoId]) {
-          //   suggestion.removeChild(suggestion.children[data.videoId])
-          // }
             refresh(data.list, data.suggestion)
         }
+      })
+
+      function new_suggestion(e) {
+        fetch('/new_suggestion', {
+          method : 'POST',
+          headers : {'Content-Type' : 'application/json'},
+          body : JSON.stringify({
+              roomId : `<%= data.roomId %>`,
+              videoId : e.target.dataset.videoid,
+              
+          })
+        })
+      }
+
+      socket.on('new_suggestion', (data) => {
+        refresh(data.list, data.suggestion, data.suggestion_videoId)
       })
       
       socket.on('golive', (data) => {
@@ -423,7 +437,7 @@
         })
       }
 
-      function refresh(PL, SGT) { //add, load시 playlist, suggestion 새로고침
+      function refresh(PL, SGT, suggestion_videoId) { //add, load시 playlist, suggestion 새로고침
         var playlist = document.querySelector('.playlist')
         var suggestion = document.querySelector('.suggestion')
         var h4 = playlist.firstElementChild
@@ -439,6 +453,23 @@
           div_id.setAttribute('id', PL[i].videoId)
           div.innerText = PL[i].title + " " + secto(PL[i].length)
 
+          div_id.appendChild(div)
+          console.log(suggestion_videoId != PL.videoId, !suggestion_videoId)
+
+          if (suggestion_videoId != PL[i].videoId || !suggestion_videoId) {
+            var new_suggest_btn = document.createElement('input')
+            new_suggest_btn.setAttribute('value', '새로운 제안 받기')
+            new_suggest_btn.setAttribute('type', 'button')
+            new_suggest_btn.setAttribute('class', 'new_suggest_btn')
+            new_suggest_btn.setAttribute('data-videoid', PL[i].videoId)
+            new_suggest_btn.setAttribute('data-title', PL[i].title)
+            new_suggest_btn.setAttribute('data-length', PL[i].length)
+
+            new_suggest_btn.addEventListener('click', new_suggestion)
+
+            div_id.appendChild(new_suggest_btn)
+          }
+
           var delete_btn = document.createElement('input')
           delete_btn.setAttribute('value', '삭제')
           delete_btn.setAttribute('type', 'button')
@@ -449,7 +480,8 @@
 
           delete_btn.addEventListener('click', delete_song)
 
-          div_id.append(div, delete_btn)
+          div_id.appendChild(delete_btn)
+
           playlist.appendChild(div_id )
 
         }

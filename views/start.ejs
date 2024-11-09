@@ -30,14 +30,18 @@
         </div>
       </div>
     </div>
+
+    <% if ( data.song_begin.length > 0 ) { %>
+      빠른 선곡
+    <% }%> 
     <% for ( var i = 0 ; i < data.song_begin.length ; i++) { %>
       <form class="form-box" action="/start" method="POST">
         <input name="url" type="hidden" value="https://www.youtube.com/watch?v=<%=data.song_begin[i].videoId%>">
         <span><%= data.song_begin[i].title %></span>
         <button type="submit">시작하기</button>
       </form>
-      
     <% } %>
+
     <% } else {%>
       <a href="/login">로그인 후 시작하세요!</a>
 
