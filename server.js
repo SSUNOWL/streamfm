@@ -291,8 +291,8 @@ app.post('/new_suggestion', async(req, res) => {
 
 
 app.get('/normal', async(req,res) => {
+  try {
   let result = await youtubesearchapi.GetChannelById("UC-9-kyTW8ZkZNDHQJ6FgpwQ")
-
   var normal = []
   for ( var i = 0 ; i < result[0].content.sectionListRenderer.contents.length - 1 ; i++) {
     normal.push([result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.title.runs[0].text, []])
@@ -312,6 +312,9 @@ app.get('/normal', async(req,res) => {
     } 
   }
   res.send(normal)
+  } catch(e) {
+    res.send({error : e.message+e.stack})
+  }
 })
 
 app.get('/start', async(req, res) => {
