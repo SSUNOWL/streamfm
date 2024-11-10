@@ -301,7 +301,7 @@ app.get('/start', async(req, res) => {
   
 
   if ( req.user ) {
-    let song_begin = await db.collection('begin').find({user_id : new ObjectId(req.user.id)}).toArray()
+    let song_begin = await db.collection('begin').find({user_id : new ObjectId(req.user.id)}).limit(10).toArray()
 
     res.render('start.ejs', {data : {
       room_list : result,
