@@ -290,9 +290,34 @@ app.post('/new_suggestion', async(req, res) => {
 })  
 
 
+app.get('/normal', async(req,res) => {
+  let result = await youtubesearchapi.GetChannelById("UC-9-kyTW8ZkZNDHQJ6FgpwQ")
+
+  var normal = []
+  for ( var i = 0 ; i < result[0].content.sectionListRenderer.contents.length - 1 ; i++) {
+    normal.push([result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.title.runs[0].text, []])
+    for ( var j = 0 ; j < result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items.length ; j++) {
+      if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel != undefined) {
+        console.log('lockup')
+        normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.metadata.lockupMetadataViewModel.title.content, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.contentId)
+      } else {
+        console.log('compact')
+        if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer != undefined) {
+          normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.title.simpleText, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId)
+        } else {
+          normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.title.runs[0].text, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.playlistId)
+
+        }
+      }
+    } 
+  }
+  res.send(normal)
+})
+
 app.get('/start', async(req, res) => {
   let result = await db.collection('streamroom').find().toArray()
 // console.log(result)
+  shuffle(result)
   for ( var i = 0 ; i < result.length ; i++) {
     result[i]["room_num"] = room_num[result[i]._id]?.length
     
