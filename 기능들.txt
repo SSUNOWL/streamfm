@@ -210,7 +210,9 @@ begin collection
 https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ/featured
 기본 플리들 여기서 추가
 begin과 같이 추천의 형태로 만들자.  
-
+normal로 가져올수 있게 함. -> 서버환경에서 해보니까 버지니아 북부라서 미국께나옴 
+리전을 한국으로 바꿔버림
+환경이 바뀌었으니 getvideodetail도 해볼만 할듯?
 
 유튜브에서 추가한 노래들은 auto-generated로 검색을 하면 나온다고 함
 => 가수 이름이랑 노래로 나옴
