@@ -294,24 +294,45 @@ app.get('/normal', async(req,res) => {
   try {
   let result = await youtubesearchapi.GetChannelById("UC-9-kyTW8ZkZNDHQJ6FgpwQ")
   var normal = []
-  for ( var i = 0 ; i < result[0].content.sectionListRenderer.contents.length - 1 ; i++) {
-    normal.push([result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.title.runs[0].text, []])
-    for ( var j = 0 ; j < result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items.length ; j++) {
-      if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel != undefined) {
-        console.log('lockup')
-        normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.metadata.lockupMetadataViewModel.title.content, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.contentId)
-      } else {
-        console.log('compact')
-        if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer != undefined) {
-          normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.title.simpleText, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId)
-        } else {
-          normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.title.runs[0].text, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.playlistId)
+  // for ( var i = 0 ; i < result[0].content.sectionListRenderer.contents.length - 1 ; i++) {
+    // normal.push([result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.title.runs[0].text, []])
+  //   for ( var j = 0 ; j < result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items.length ; j++) {
+  //     if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel != undefined) {
+  //       console.log('lockup')
+  //       normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.metadata.lockupMetadataViewModel.title.content, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.contentId)
+  //     } else {
+  //       console.log('compact')
+  //       if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer != undefined) {
+  //         normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.title.simpleText, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId)
+  //       } else {
+  //         normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.title.runs[0].text, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.playlistId)
 
-        }
-      }
-    } 
+  //       }
+  //     }
+  //   } 
+  // }
+  var section = result[0].content.sectionListRenderer.contents
+    .map((z) => z.itemSectionRenderer.contents[0].shelfRenderer)
+  var horizon = section
+    .map((z) => z.content.horizontalListRenderer.items
+      .filter((y) => (y.lockupViewModel != undefined) || (y.compactStationRenderer != undefined)))
+    .filter((x) => x.length > 0)
+    .map((a) => a
+      .map((b) => [b.lockupViewModel?.metadata.lockupMetadataViewModel.title.content,b.lockupViewModel?.contentId]
+    ))
+  if (horizon[0][0][0] == null) {
+    var horizon = section
+    .map((z) => z.content.horizontalListRenderer.items
+      .filter((y) => (y.lockupViewModel != undefined) || (y.compactStationRenderer != undefined)))
+    .filter((x) => x.length > 0)
+    .map((a) => a
+    .map((b) => [b.compactStationRenderer.title.simpleText,b.compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId]
+    ))
   }
-  res.send(normal)
+
+
+  res.send(horizon)
+    
   } catch(e) {
     res.send({error : e.message+e.stack})
   }
@@ -647,7 +668,7 @@ io.on('connection', (socket) => {
   
   })
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async() => {
     // console.log(io.sockets.adapter.room)
     // console.log("socketio disconnect  ", socket.id)
     var roomId = socketid_room[socket.id]
@@ -658,6 +679,7 @@ io.on('connection', (socket) => {
 
     if ( room_num[roomId].length == 0) {
       delete room_num[roomId]
+      // await db.collection('streamroom').deleteOne({_id : new ObjectId(roomId)}) //새로고침하면 죽어버림
     }
     delete socketid_room[socket.id]
   

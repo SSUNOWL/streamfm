@@ -131,13 +131,7 @@
 
 
         if ( event.target.getPlayerState() == 0 ) {
-            // socket.emit('onended', {
-            //   roomId : '<%= data.roomId %>',
-            //   videoId : document.querySelector('.now_playing').innerText,
-            //   duration : player.getDuration(),
-            //   deleted : false,
-            //   skip : false,
-            // })
+          
             emit_onended(false, false)
             //끝나면 실행
         }
@@ -454,7 +448,7 @@
           div.innerText = PL[i].title + " " + secto(PL[i].length)
 
           div_id.appendChild(div)
-          console.log(suggestion_videoId != PL.videoId, !suggestion_videoId)
+          // console.log(suggestion_videoId != PL.videoId, !suggestion_videoId)
 
           if (suggestion_videoId != PL[i].videoId || !suggestion_videoId) {
             var new_suggest_btn = document.createElement('input')
