@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link href="/main.css" rel="stylesheet">
+
 </head>
 <body>
   <body class="grey-bg">
@@ -11,7 +13,7 @@
     <%- include('nav.ejs') %>
 
     환영합니다! <%= data.user %>
-    <div> 새롭게 스트리밍 룸을 만든후 시작하세요! </div>
+    <div> 룸에 참여하거나 새롭게 스트리밍 룸을 만든후 시작하세요! </div>
     <% if ( data.user != "" ) { %>
     <div>
       <h4>유튜브 링크로 시작</h4>
@@ -41,7 +43,25 @@
         <button type="submit">시작하기</button>
       </form>
     <% } %>
+    <% if (data.normal_suggest.length > 0) { %>
+      <details> <summary>유튜브 Music 추천 플레이리스트</summary>
+      <p>
+      <% for ( var i = 0 ; i < data.normal_suggest.length ; i++) { %>
+        <div class="norm_form">
 
+        <% for ( var j = 0 ; j < data.normal_suggest[i].length ; j++ ) { %>
+          <form class="form_box" action="/start" method="POST">
+            <input name="url" type="hidden" value="https://www.youtube.com/watch?list=<%=data.normal_suggest[i][j][1]%>">
+            <span><%= data.normal_suggest[i][j][0] %></span>
+            <button type="submit">시작하기</button>
+          </form>
+        <% } %>
+        </div>
+
+      <% } %>
+      </p>
+      </details>
+    <% } %>
     <% } else {%>
       <a href="/login">로그인 후 시작하세요!</a>
 
@@ -77,7 +97,7 @@
       <% } %>
     </div>
     </body>
-    <!-- <%= JSON.stringify(data.song_begin) %> -->
+    <!-- <%= JSON.stringify(data.normal_suggest) %> -->
 
     <script>
         

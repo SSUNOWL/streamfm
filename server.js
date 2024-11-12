@@ -290,27 +290,10 @@ app.post('/new_suggestion', async(req, res) => {
 })  
 
 
-app.get('/normal', async(req,res) => {
+const normal_suggest = async() => {
   try {
   let result = await youtubesearchapi.GetChannelById("UC-9-kyTW8ZkZNDHQJ6FgpwQ")
-  var normal = []
-  // for ( var i = 0 ; i < result[0].content.sectionListRenderer.contents.length - 1 ; i++) {
-    // normal.push([result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.title.runs[0].text, []])
-  //   for ( var j = 0 ; j < result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items.length ; j++) {
-  //     if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel != undefined) {
-  //       console.log('lockup')
-  //       normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.metadata.lockupMetadataViewModel.title.content, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].lockupViewModel.contentId)
-  //     } else {
-  //       console.log('compact')
-  //       if (result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer != undefined) {
-  //         normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.title.simpleText, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId)
-  //       } else {
-  //         normal[i][1].push(result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.title.runs[0].text, result[0].content.sectionListRenderer.contents[i].itemSectionRenderer.contents[0].shelfRenderer.content.horizontalListRenderer.items[j].gridPlaylistRenderer.playlistId)
-
-  //       }
-  //     }
-  //   } 
-  // }
+  
   var section = result[0].content.sectionListRenderer.contents
     .map((z) => z.itemSectionRenderer.contents[0].shelfRenderer)
   var horizon = section
@@ -326,36 +309,46 @@ app.get('/normal', async(req,res) => {
       .filter((y) => (y.lockupViewModel != undefined) || (y.compactStationRenderer != undefined)))
     .filter((x) => x.length > 0)
     .map((a) => a
-    .map((b) => [b.compactStationRenderer.title.simpleText,b.compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId]
-    ))
+      .map((b) => [b.compactStationRenderer.title.simpleText, b.compactStationRenderer.navigationEndpoint.watchPlaylistEndpoint.playlistId]
+      ))
   }
 
+  return await Promise.resolve(horizon)
 
-  res.send(horizon)
-    
+  
   } catch(e) {
-    res.send({error : e.message+e.stack})
+    return await Promise.reject(e)
+  }
+}
+
+app.get('/suggest/:id', async(req, res) =>{
+  try{
+    var result = await youtubesearchapi.GetVideoDetails(req.params.id)
+    res.send(result)
+  } catch(e) {
+    res.send({errror : e.message + e.stack})
   }
 })
 
 app.get('/start', async(req, res) => {
+  var norm = await normal_suggest(0)
+  // console.log(norm)
   let result = await db.collection('streamroom').find().toArray()
-// console.log(result)
   shuffle(result)
   for ( var i = 0 ; i < result.length ; i++) {
     result[i]["room_num"] = room_num[result[i]._id]?.length
     
   }
-  // console.log(result)
   
 
   if ( req.user ) {
     let song_begin = await db.collection('begin').find({user_id : new ObjectId(req.user.id)}).limit(10).toArray()
-
     res.render('start.ejs', {data : {
       room_list : result,
       user : req.user ? req.user.username : "",
       song_begin : song_begin,
+      normal_suggest : norm,
+    
     }})
   } else {
     res.render('start.ejs', {data : {

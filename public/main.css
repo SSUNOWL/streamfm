@@ -21,10 +21,10 @@ body {
     background: white;
     border-radius: 5px;
   }
-  .list-box {
+  /* .list-box {
     padding : 10px;
 
-  }
+  } */
   .list-box h4{
     font-size: 16px;
     margin: 5px;
@@ -71,6 +71,14 @@ body {
     height: 300px;
   }
   .search_result {
-    overflow-y: auto;
-    height: 300px;
+    overflow-y: scroll;
+    height: 100px;
+  }
+  .norm_form .form_box {
+    float: left;
+  }
+  .norm_form {
+    background: #eee;
+    float: right;
+    width: 100%
   }
