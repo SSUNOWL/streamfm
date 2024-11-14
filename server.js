@@ -534,7 +534,7 @@ app.post('/add', async(req, res) => {
 
   result.list.push({videoId : req.body.videoId, title : add_song.title, length : parseInt(timeto(add_song.length.simpleText))})
   
-  var is_suggest = req.body.suggest == 'true' ? true : false
+  var is_suggest = req.body.suggest
   if ( is_suggest ) {
     const idx = result.suggestion.findIndex(function(item) {return item.videoId === req.body.videoId}) // findIndex = find + indexOf
     if (idx > -1) result.suggestion.splice(idx, 1)

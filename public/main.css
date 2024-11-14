@@ -51,7 +51,7 @@ body {
   
   .progress_filled {
     width: 50%;
-    background: #ffc600;
+    background: #28a745;
     flex: 0;
     flex-basis: 50%;
   }
@@ -82,3 +82,74 @@ body {
     float: right;
     width: 100%
   }
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    margin: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* background: #007bff; */
+}
+
+.playhead {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.playlist, .suggestion {
+    margin-top: 20px;
+}
+
+.playlist-item, .suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.playlist-item:last-child, .suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px; /* 버튼 간 간격 */
+}
+
+input[type="button"] {
+    padding: 5px 10px;
+    border: none;
+    background: #28a745;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+input[type="button"]:hover {
+    background: #218838;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+.volume_bar {
+  width: 90%;
+  border-radius: 8px;
+  outline: none;
+  transition: background 450ms ease-in;
+  accent-color: #28a745;
+}

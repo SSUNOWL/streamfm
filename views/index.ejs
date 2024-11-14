@@ -1,76 +1,84 @@
 <!DOCTYPE html>
-<html>
-  <link href="/main.css" rel="stylesheet">
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/main.css" rel="stylesheet">
+    <title>Video Player</title>
+</head>
+<body class="grey-bg">
+    <%- include('nav.ejs') %>
 
-  <body>
-    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
-    <body class="grey-bg">
-      <%- include('nav.ejs') %>
-      <div class="constainer">
-        <div class="title"><h4></h4></div>
-        <span class="is_connect"><h4></h4></span>
-
-        <div class="user_list">
-          
+    <div class="container">
+        <div class="header">
+            <div class="title"><h4></h4></div>
+            <span class="is_connect"><h4></h4></span>
         </div>
+
+        <div class="user_list"></div>
         <div class="now_playing"></div>
-        <div class="player" id="player"></div>
 
         <div class="playhead">
-          <div id="ctime"></div>
-          <div class="progress">
-              <div class="progress_filled"></div>
-          </div>
-          <div id="time"></div>
-          <button onclick="golive()">Live</button>
-          <button onclick="skip()">다음 곡</button>
-          <span>video : <input onclick="view()" type="checkbox" class="view"></span>
-          
-          <h2>volume</h2>
-          <input id="mute_btn" type="button" value="음소거 해제">
-          <input id="volume_bar" type="range" value="<%= data.volume %>" min="0" step="1" max="100" oninput="play_volume()">   
+            <div id="ctime"></div>
+            <div class="progress">
+                <div class="progress_filled"></div>
+            </div>
+            <div id="time"></div>
+            <input type="button" value="Live" onclick="golive()">
+            <input type="button" value="다음 곡" onclick="skip()">
+            <span>video: <input onclick="view()" type="checkbox" class="view"></span>
+
+            <h2>Volume</h2>
+            <input id="mute_btn" type="button" value="음소거 해제">
+            <input id="volume_bar" class="volume_bar" type="range" value="<%= data.volume %>" min="0" step="1" max="100" oninput="play_volume()">
         </div>
-      </div>
-      <div class="container">
+        <div class="player" id="player"></div>
+
+    </div>
+
+    <div class="container playlist-container">
+        <h4>Playlist</h4>
+        <% if (data.loop) { %>
+          <input class="loop" type="checkbox" checked> Loop
+        <% } else { %>
+          <input class="loop" type="checkbox"> Loop
+        <% } %>
         <div class="playlist">
-          <span>
-          <h4>playlist</h4>
-          <span>Loop: </span>
-          <% if ( data.loop ){ %>
-          <input class="loop" type="checkbox" checked>
-          <% } else {%>
-          <input class="loop" type="checkbox">
-          <% } %>
-          </span>
-        <% for ( var i = 0 ; i < data.list.length ; i++ ) { %>
-          <div id="<%= data.list[i].videoId %>" >
-          <div> <%= data.list[i].title %> <%= data.secto(data.list[i].length) %> </div>
-          <input value="새로운 제안 받기" type="button" class="new_suggest_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
-          <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
-          </div>
-        <% } %>
+            <% for (var i = 0; i < data.list.length; i++) { %>
+                <div class="playlist-item" id="<%= data.list[i].videoId %>">
+                    <div><%= data.list[i].title %> <%= data.secto(data.list[i].length) %></div>
+                    <div class="button-group">
+                        <input value="새로운 제안 받기" type="button" class="new_suggest_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
+                        <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
+                    </div>
+                </div>
+            <% } %>
         </div>
-        <div>----------------------</div>
+
+        <h4>Suggestions</h4>
         <div class="suggestion">
-          <h4>suggestion</h4>
-        <% for ( var i = 0 ; i < data.suggestion.length ; i++ ) { %>
-          <div id="<%= data.suggestion[i].videoId %>" >
-          <div> <%= data.suggestion[i].title %> <%= data.secto(data.suggestion[i].length) %> </div>
-          <input type="button" value="추가" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>" data-suggest=true class="suggest_add_btn">
-          <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>">
-          </div>
-        <% } %>
+            <% for (var i = 0; i < data.suggestion.length; i++) { %>
+                <div class="suggestion-item" id="<%= data.suggestion[i].videoId %>">
+                    <div><%= data.suggestion[i].title %> <%= data.secto(data.suggestion[i].length) %></div>
+                    <div class="button-group">
+                        <input type="button" value="추가" class="suggest_add_btn" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>">
+                        <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>">
+                    </div>
+                </div>
+            <% } %>
         </div>
-      </div>
-        <div class="container">
-          <div>
-            <input class="word" type="text">
-            <input class="submit" value="검색" type="button" onclick="search_word()">
-            <div class="search_result"></div>
-          </div>
-        </div>
-    </body>
+    </div>
+
+    <div class="container search-container">
+        <input class="word" type="text" placeholder="검색어 입력">
+        <input class="submit" value="검색" type="button" onclick="search_word()">
+        <div class="search_result"></div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+
+
+    
 
     <script>
       var tag = document.createElement('script');
@@ -211,85 +219,55 @@
       }, 1000)
 
       function search_word() {
-        document.querySelector('.search_result').innerHTML =""
+        const query = document.querySelector('.word').value;
+        fetch(`/search?word=${query}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }).then(async (r) => {
+            var result = await r.json();
+                const searchResult = document.querySelector('.search_result');
+                searchResult.innerHTML = '';
 
-        var word = document.querySelector('.word').value
-        fetch(`/search?word=${word}`, {
-            method : 'POST',
-            headers : {'Content-Type' : 'application/json'}
-        }).then(async(r) => {
-          if ( r.status == 200) {
-            var result = await r.text()
-            result = JSON.parse(result)
-            for ( var i = 0 ; i < result.length ; i++ ) {
-              var box = document.createElement('div')
-              box.setAttribute('id', result[i].Id)
+                result.forEach(item => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'playlist-item'; // 검색 결과에 playlist-item 클래스 적용
+                    resultItem.innerHTML = `
+                        <div>${item.Title} ${item.length} ${item.channelTitle}</div>
+                        <div class="button-group">
+                            <input type="button" value="추가" class="search_add_btn" data-videoid="${item.Id}" data-title="${item.Title}" data-length="${item.length}">
+                        </div>
+                    `;
+                    searchResult.appendChild(resultItem);
+                });
+         });
+        }
 
-              var div = document.createElement('div')
-              div.innerText = result[i].Title + " | " + result[i].channelTitle + " | "+ result[i].length
-              box.appendChild(div)
 
-              var add_btn = document.createElement("input")
-              add_btn.setAttribute('type', "button")
-              add_btn.setAttribute('value', "추가")
-              add_btn.setAttribute('data-videoId', result[i].Id)
-              add_btn.setAttribute('data-title', result[i].Title)
-              add_btn.setAttribute('data-length', parseInt(timeto(result[i].length)))
-              add_btn.setAttribute('data-suggest', false)
-              add_btn.setAttribute('class', "add_btn")
-              box.appendChild(add_btn)
-              document.querySelector('.search_result').appendChild(box)
-
-            }
-            for ( var btn of document.querySelectorAll('.add_btn') ) {
-            btn.addEventListener('click', add_song)
-
-            }
-          } else {
-            var result = await r.text()
-
-            document.querySelector('.search_result').innerText = result
-          }
-        })
-
-      }
-
-      for ( var btn of document.querySelectorAll('.suggest_add_btn') ) {
-          btn.addEventListener('click', add_song)
-
-      }
-
-      for ( var btn of document.querySelectorAll('.delete_btn')) {
-        btn.addEventListener('click', delete_song)
-      }
-      for ( var btn of document.querySelectorAll('.new_suggest_btn')) {
-        btn.addEventListener('click', new_suggestion)
-      }
-
-      function add_song(e) {
+      
+    function add_song(videoId, title, length, suggest) {
         fetch(`/add`, {
             method : 'POST',
             headers : {'Content-Type' : 'application/json'},
             body : JSON.stringify({
               roomId : `<%= data.roomId %>`,
-              videoId : e.target.dataset.videoid,
-              title : e.target.dataset.title,
-              length : e.target.dataset.length,
-              suggest : e.target.dataset.suggest
+              videoId : videoId,
+              title : title,
+              length : length,
+              suggest : suggest
             })
         })
       } 
 
-      function delete_song(e) {
+      function delete_song(videoId, title, length, suggest) {
         fetch('/delete', {
           method : 'POST',
           headers : {'Content-Type' : 'application/json'},
           body : JSON.stringify({
               roomId : `<%= data.roomId %>`,
-              videoId : e.target.dataset.videoid,
-              title : e.target.dataset.title,
-              length : e.target.dataset.length,
-              suggest : (document.querySelector('.suggestion') == e.target.parentNode.parentNode)
+              videoId : videoId,
+              title : title,
+              length : length,
+              suggest : suggest
           })
         })
       }
@@ -325,13 +303,13 @@
         }
       })
 
-      function new_suggestion(e) {
+      function new_suggestion(videoId, title, length) {;
         fetch('/new_suggestion', {
           method : 'POST',
           headers : {'Content-Type' : 'application/json'},
           body : JSON.stringify({
               roomId : `<%= data.roomId %>`,
-              videoId : e.target.dataset.videoid,
+              videoId : videoId,
               
           })
         })
@@ -370,20 +348,7 @@
         })
       }
       
-      document.querySelector('.loop').addEventListener('change', () => {
-        var loop_btn = document.querySelector('.loop')
-
-        fetch(`/loop`, {
-            method : 'POST',
-            headers : {'Content-Type' : 'application/json'},
-            body : JSON.stringify({
-              roomId : `<%= data.roomId %>`,
-              loop : loop_btn.checked
-            })
-        })  
-        
-      })
-
+      
       socket.on('loop', (data) => {
         document.querySelector('.loop').checked = data.loop
       })
@@ -402,17 +367,7 @@
         })       
       }
 
-      document.getElementById('mute_btn').addEventListener('click', () => {
-        if (player.isMuted()) {
-          player.unMute()
-          document.getElementById('mute_btn').value = "음소거"
-        } else {
-          player.mute()
-          document.getElementById('mute_btn').value = "음소거 해제"
-
-        }
-      })
-
+      
       function view() {
         if (document.querySelector('.view').checked ) {
           document.querySelector(".player").style['display'] = 'block'
@@ -431,88 +386,46 @@
         })
       }
 
-      function refresh(PL, SGT, suggestion_videoId) { //add, load시 playlist, suggestion 새로고침
-        var playlist = document.querySelector('.playlist')
-        var suggestion = document.querySelector('.suggestion')
-        var h4 = playlist.firstElementChild
-        playlist.innerHTML = ""
-        playlist.appendChild(h4)
-        h4 = suggestion.firstElementChild
-        suggestion.innerHTML = ""
-        suggestion.appendChild(h4)
-        
-        for ( var i = 0 ; i < PL.length ; i++) {
-          var div_id = document.createElement('div')
-          var div = document.createElement('div')
-          div_id.setAttribute('id', PL[i].videoId)
-          div.innerText = PL[i].title + " " + secto(PL[i].length)
+      function refresh(list, suggestion) {
+            const playlist = document.querySelector('.playlist');
+            const suggestionContainer = document.querySelector('.suggestion');
 
-          div_id.appendChild(div)
-          // console.log(suggestion_videoId != PL.videoId, !suggestion_videoId)
+            // 기존 내용 초기화
+            playlist.innerHTML = '';
+            suggestionContainer.innerHTML = '';
 
-          if (suggestion_videoId != PL[i].videoId || !suggestion_videoId) {
-            var new_suggest_btn = document.createElement('input')
-            new_suggest_btn.setAttribute('value', '새로운 제안 받기')
-            new_suggest_btn.setAttribute('type', 'button')
-            new_suggest_btn.setAttribute('class', 'new_suggest_btn')
-            new_suggest_btn.setAttribute('data-videoid', PL[i].videoId)
-            new_suggest_btn.setAttribute('data-title', PL[i].title)
-            new_suggest_btn.setAttribute('data-length', PL[i].length)
+            // Playlist 항목 추가
+            list.forEach(item => {
+                const newItem = document.createElement('div');
+                newItem.className = 'playlist-item';
+                newItem.id = item.videoId;
 
-            new_suggest_btn.addEventListener('click', new_suggestion)
+                newItem.innerHTML = `
+                    <div>${item.title} ${secto(item.length)}</div>
+                    <div class="button-group">
+                        <input value="새로운 제안 받기" type="button" class="new_suggest_btn" data-videoid="${item.videoId}" data-title="${item.title}" data-length="${item.length}">
+                        <input value="삭제" type="button" class="delete_btn" data-videoid="${item.videoId}" data-title="${item.title}" data-length="${item.length}">
+                    </div>
+                `;
+                playlist.appendChild(newItem);
+            });
 
-            div_id.appendChild(new_suggest_btn)
-          }
+            // Suggestions 항목 추가
+            suggestion.forEach(item => {
+                const newSuggestion = document.createElement('div');
+                newSuggestion.className = 'suggestion-item';
+                newSuggestion.id = item.videoId;
 
-          var delete_btn = document.createElement('input')
-          delete_btn.setAttribute('value', '삭제')
-          delete_btn.setAttribute('type', 'button')
-          delete_btn.setAttribute('class', 'delete_btn')
-          delete_btn.setAttribute('data-videoid', PL[i].videoId)
-          delete_btn.setAttribute('data-title', PL[i].title)
-          delete_btn.setAttribute('data-length', PL[i].length)
-
-          delete_btn.addEventListener('click', delete_song)
-
-          div_id.appendChild(delete_btn)
-
-          playlist.appendChild(div_id )
-
+                newSuggestion.innerHTML = `
+                    <div>${item.title} ${secto(item.length)}</div>
+                    <div class="button-group">
+                        <input type="button" value="추가" class="suggest_add_btn" data-videoid="${item.videoId}" data-title="${item.title}" data-length="${item.length}">
+                        <input value="삭제" type="button" class="delete_btn" data-videoid="${item.videoId}" data-title="${item.title}" data-length="${item.length}">
+                    </div>
+                `;
+                suggestionContainer.appendChild(newSuggestion);
+            });
         }
-        for ( var i = 0 ; i < SGT.length ; i++) {
-          var div_id = document.createElement('div')
-          var div = document.createElement('div')
-          div_id.setAttribute('id', SGT[i].videoId)
-          div.innerText = SGT[i].title + " " + secto(SGT[i].length)
-
-          var add_btn = document.createElement('input')
-          add_btn.setAttribute('value', '추가')
-          add_btn.setAttribute('type', 'button')
-          add_btn.setAttribute('class', 'suggest_add_btn')
-          add_btn.setAttribute('data-videoid', SGT[i].videoId)
-          add_btn.setAttribute('data-title', SGT[i].title)
-          add_btn.setAttribute('data-length', SGT[i].length)
-          add_btn.setAttribute('data-suggest', 'true')
-          add_btn.addEventListener('click', add_song)
-
-
-          var delete_btn = document.createElement('input')
-          delete_btn.setAttribute('value', '삭제')
-          delete_btn.setAttribute('type', 'button')
-          delete_btn.setAttribute('class', 'delete_btn')
-          delete_btn.setAttribute('data-videoid', SGT[i].videoId)
-          delete_btn.setAttribute('data-title', SGT[i].title)
-          delete_btn.setAttribute('data-length', SGT[i].length)
-
-          delete_btn.addEventListener('click', delete_song)
-
-          div_id.append(div, add_btn, delete_btn)
-
-
-          suggestion.appendChild(div_id )
-        }
-      }
-
       function secto(seconds) {
           seconds = parseInt(seconds)
           var hour = parseInt(seconds/3600) < 10 ? '0' + parseInt(seconds/3600) : parseInt(seconds/3600);
@@ -529,6 +442,95 @@
         return hours * 3600 + minutes * 60 + seconds;
       }
 
+      document.addEventListener('DOMContentLoaded', () => {
+            const playlistContainer = document.querySelector('.playlist');
+            const suggestionContainer = document.querySelector('.suggestion');
+            const searchContainer = document.querySelector('.search_result');
+            // Playlist 버튼에 이벤트 리스너 추가
+            playlistContainer.addEventListener('click', function(event) {
+                const target = event.target;
+
+                // 새로운 제안 받기 버튼 클릭 시
+                if (target.classList.contains('new_suggest_btn')) {
+                    const videoId = target.getAttribute('data-videoid');
+                    const title = target.getAttribute('data-title');
+                    const length = target.getAttribute('data-length');
+                    new_suggestion(videoId, title, length);
+                }
+
+                // 삭제 버튼 클릭 시
+                if (target.classList.contains('delete_btn')) {
+                    const videoId = target.getAttribute('data-videoid');
+                    const title = target.getAttribute('data-title');
+                    const length = target.getAttribute('data-length');
+                    delete_song(videoId, title, length, false);
+                }
+            });
+
+            // Suggestions 버튼에 이벤트 리스너 추가
+            suggestionContainer.addEventListener('click', function(event) {
+                const target = event.target;
+
+                // 추가 버튼 클릭 시
+                if (target.classList.contains('suggest_add_btn')) {
+                    const videoId = target.getAttribute('data-videoid');
+                    const title = target.getAttribute('data-title');
+                    const length = target.getAttribute('data-length');
+                    add_song(videoId, title, length, true);
+                }
+
+                // 삭제 버튼 클릭 시
+                if (target.classList.contains('delete_btn')) {
+                    const videoId = target.getAttribute('data-videoid');
+                    const title = target.getAttribute('data-title');
+                    const length = target.getAttribute('data-length');
+                    delete_song(videoId, title, length, true);
+                }
+            });
+            console.log(event.target)
+            searchContainer.addEventListener('click', function(event) {
+              console.log('search')
+                const target = event.target;
+
+                // 추가 버튼 클릭 시
+                if (target.classList.contains('search_add_btn')) {
+                    const videoId = target.getAttribute('data-videoid');
+                    const title = target.getAttribute('data-title');
+                    const length = target.getAttribute('data-length');
+                    add_song(videoId, title, length, false);
+                }
+            });
+
+            // 검색 버튼 클릭 시
+            document.querySelector('.submit').addEventListener('click', search_word);
+
+            // 볼륨 조절 슬라이더 이벤트 리스너 추가
+            document.getElementById('volume_bar').addEventListener('input', play_volume);
+
+            // 음소거 버튼 클릭 시
+            document.getElementById('mute_btn').addEventListener('click', () => {
+                if (player.isMuted()) {
+                    player.unMute();
+                    document.getElementById('mute_btn').value = "음소거";
+                } else {
+                    player.mute();
+                    document.getElementById('mute_btn').value = "음소거 해제";
+                }
+            });
+
+            // 반복 체크박스 변경 시
+            document.querySelector('.loop').addEventListener('change', () => {
+                const loop_btn = document.querySelector('.loop');
+                fetch(`/loop`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        roomId: `<%= data.roomId %>`,
+                        loop: loop_btn.checked  
+                    })
+                });
+            });
+        });
 
     </script>
   </body>
