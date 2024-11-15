@@ -26,23 +26,40 @@
             <div id="time"></div>
             <input type="button" value="Live" onclick="golive()">
             <input type="button" value="다음 곡" onclick="skip()">
-            <span>video: <input onclick="view()" type="checkbox" class="view"></span>
 
             <h2>Volume</h2>
             <input id="mute_btn" type="button" value="음소거 해제">
             <input id="volume_bar" class="volume_bar" type="range" value="<%= data.volume %>" min="0" step="1" max="100" oninput="play_volume()">
         </div>
-        <div class="player" id="player"></div>
+
+        <div class="player-container">
+          <label class="custom-checkbox">
+            <input type="checkbox" id="videoToggle" class="view" onclick="view()">
+            <span class="checkmark"></span>
+            비디오 보기
+          </label>
+          <div class="player" id="player"></div>
+        </div> 
 
     </div>
 
     <div class="container playlist-container">
-        <h4>Playlist</h4>
+        <h4>Playlist
         <% if (data.loop) { %>
-          <input class="loop" type="checkbox" checked> Loop
+          <label class="custom-checkbox">
+            <input type="checkbox" class="loop" checked>
+            <span class="checkmark"></span>
+            <h5 style="margin-top:20px;">Loop</h5>
+          </label>
         <% } else { %>
-          <input class="loop" type="checkbox"> Loop
+          <label class="custom-checkbox">
+            <input type="checkbox" class="loop" >
+            <span class="checkmark"></span>
+            <h5 style="margin-top:20px;">Loop</h5>
+
+          </label>
         <% } %>
+        </h4>
         <div class="playlist">
             <% for (var i = 0; i < data.list.length; i++) { %>
                 <div class="playlist-item" id="<%= data.list[i].videoId %>">
