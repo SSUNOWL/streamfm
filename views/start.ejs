@@ -7,97 +7,98 @@
     <link href="/main.css" rel="stylesheet">
 
 </head>
-<body>
-  <body class="grey-bg">
+<body class="grey-bg">
 
-    <%- include('nav.ejs') %>
+  <%- include('nav.ejs') %>
 
-    환영합니다! <%= data.user %>
-    <div> 룸에 참여하거나 새롭게 스트리밍 룸을 만든후 시작하세요! </div>
-    <% if ( data.user != "" ) { %>
-    <div>
-      <h4>유튜브 링크로 시작</h4>
-    <form class="form-box" action="/start" method="POST">
-        <input name="url" placeholder="youtube url을 입력하세요">
-        <span>Random: </span><input name="random" type="checkbox">
-        <button type="submit">시작하기</button>
-    </form>
-    </div>
-    <div class="container">
-        <div>
-            <h4>검색해서 시작</h4>
-            <input class="word" type="text">
-            <input class="submit" value="검색" type="button" onclick="search_word()">
-            <div class="search_result"></div>
-        </div>
-      </div>
-    </div>
+  <div class="container">
+      <h2>환영합니다, <%= data.user %>!</h2>
+      <p>룸에 참여하거나 새롭게 스트리밍 룸을 만든 후 시작하세요!</p>
 
-    <% if ( data.song_begin.length > 0 ) { %>
-      빠른 선곡
-    <% }%> 
-    <% for ( var i = 0 ; i < data.song_begin.length ; i++) { %>
-      <form class="form-box" action="/start" method="POST">
-        <input name="url" type="hidden" value="https://www.youtube.com/watch?v=<%=data.song_begin[i].videoId%>">
-        <span><%= data.song_begin[i].title %></span>
-        <button type="submit">시작하기</button>
-      </form>
-    <% } %>
-    <% if (data.normal_suggest.length > 0) { %>
-      <details> <summary>유튜브 Music 추천 플레이리스트</summary>
-      <p>
-      <% for ( var i = 0 ; i < data.normal_suggest.length ; i++) { %>
-        <div class="norm_form">
+      <% if (data.user != "") { %>
+          <div>
+              <h4>유튜브 링크로 시작</h4>
+              <form class="form-box" action="/start" method="POST">
+                  <input name="url" type="url" placeholder="YouTube URL을 입력하세요" required>
+                  <label class="custom-checkbox">
+                    Random : 
+                    <input type="checkbox" name="random">
+                    <span class="checkmark"></span>
+                    
+                  </label>
+                  <button type="submit">시작하기</button>
+              </form>
+          </div>
 
-        <% for ( var j = 0 ; j < data.normal_suggest[i].length ; j++ ) { %>
-          <form class="form_box" action="/start" method="POST">
-            <input name="url" type="hidden" value="https://www.youtube.com/watch?list=<%=data.normal_suggest[i][j][1]%>">
-            <span><%= data.normal_suggest[i][j][0] %></span>
-            <button type="submit">시작하기</button>
-          </form>
-        <% } %>
-        </div>
+          <div>
+              <h4>검색해서 시작</h4>
+              <input class="word" type="text" placeholder="검색어를 입력하세요">
+              <input class="submit" value="검색" type="button" onclick="search_word()">
+              <div class="search_result"></div>
+          </div>
 
-      <% } %>
-      </p>
-      </details>
-    <% } %>
-    <% } else {%>
-      <a href="/login">로그인 후 시작하세요!</a>
+          <% if (data.song_begin.length > 0) { %>
+              <h4>빠른 선곡</h4>
+              <% for (var i = 0; i < data.song_begin.length; i++) { %>
+                  <form class="form-box" action="/start" method="POST">
+                      <input name="url" type="hidden" value="https://www.youtube.com/watch?v=<%= data.song_begin[i].videoId %>">
+                      <span><%= data.song_begin[i].title %></span>
+                      <button type="submit">시작하기</button>
+                  </form>
+              <% } %>
+          <% } %>
 
-    <% } %>
-
-    <div class="white-bg"> Room List
-      
-      <% if ( data.room_list.length ) { %>
-      <% for ( var i = 0 ; i < data.room_list.length ; i++) { %>
-        
-      <% Array.prototype.push.apply(data.room_list[i].list, data.room_list[i].suggestion) %>
-        <div class="list-box">
-        <% var startat = 0 %>
-        <%  var ended = new Date(data.room_list[i].started.getTime() + (data.room_list[i].list[0].length - 1) * 1000) %>
-        <%  var now = new Date() %>
-        <% if (ended < now) startat = 1 %>
-        <% if ( !data.room_list[i].list[startat] ) startat = 0 %>
-        <a href="/index/<%=data.room_list[i]._id%>"> <%= data.room_list[i].list[startat].title %> </a>
-        <% if ( data.room_list[i].list[startat + 1] ) { %>
-          <span> //next : <%= data.room_list[i].list[startat + 1].title %> </span>
-        <% } %> 
-        <% if(data.room_list[i].room_num) { %>
-          <span>| Viewer : <%= data.room_list[i].room_num %> </span> 
-        <% } else { %>
-          <span>| Viewer : 0 </span> 
-        <% } %>
-        </div>
-      <% } %>
+          <% if (data.normal_suggest.length > 0) { %>
+            <details>
+              <summary>유튜브 Music 추천 플레이리스트</summary>
+              <div class="normal-container">
+                  <% for (var i = 0; i < data.normal_suggest.length; i++) { %>
+                      <div class="normal-row">
+                          <% for (var j = 0; j < data.normal_suggest[i].length; j++) { %>
+                              <div class="normal-card">
+                                  <form class="form_box" action="/start" method="POST">
+                                      <input name="url" type="hidden" value="https://www.youtube.com/watch?list=<%= data.normal_suggest[i][j][1] %>">
+                                      <span class="normal-title"><%= data.normal_suggest[i][j][0] %></span>
+                                      <button type="submit" class="normal-button">시작하기</button>
+                                  </form>
+                              </div>
+                          <% } %>
+                      </div>
+                  <% } %>
+              </div>
+          </details>
+          <% } %>
       <% } else { %>
-        <div>
-          방이 없습니다. 새롭게 시작해주세요!
-        </div>
+          <a href="/login">로그인 후 시작하세요!</a>
       <% } %>
-    </div>
-    </body>
-    <!-- <%= JSON.stringify(data.normal_suggest) %> -->
+
+      <div class="white-bg room-list"> 
+          <h4>방 목록</h4>
+          <% if (data.room_list.length) { %>
+              <% for (var i = 0; i < data.room_list.length; i++) { %>
+                  <% Array.prototype.push.apply(data.room_list[i].list, data.room_list[i].suggestion) %>
+                  <div class="list-box">
+                      <% var startat = 0 %>
+                      <% var ended = new Date(data.room_list[i].started.getTime() + (data.room_list[i].list[0].length - 1) * 1000) %>
+                      <% var now = new Date() %>
+                      <% if (ended < now) startat = 1 %>
+                      <% if (!data.room_list[i].list[startat]) startat = 0 %>
+                      <a href="/index/<%= data.room_list[i]._id %>"> <%= data.room_list[i].list[startat].title %> </a>
+                      <% if (data.room_list[i].list[startat + 1]) { %>
+                          <span> //next : <%= data.room_list[i].list[startat + 1].title %> </span>
+                      <% } %> 
+                      <% if (data.room_list[i].room_num) { %>
+                          <span>| Viewer : <%= data.room_list[i].room_num %> </span> 
+                      <% } else { %>
+                          <span>| Viewer : 0 </span> 
+                      <% } %>
+                  </div>
+              <% } %>
+          <% } else { %>
+              <div>방이 없습니다. 새롭게 시작해주세요!</div>
+          <% } %>
+      </div>
+  </div>    <!-- <%= JSON.stringify(data.normal_suggest) %> -->
 
     <script>
         
@@ -108,43 +109,34 @@
         fetch(`/search?word=${word}`, {
             method : 'POST',
             headers : {'Content-Type' : 'application/json'}
-        }).then(async(r) => {
-          if ( r.status == 200 ) {
-            var result = await r.text()
-            result = JSON.parse(result)
-            for ( var i = 0 ; i < result.length ; i++ ) {
+        }).then(response => response.json())
+          .then(data => {
+            const resultsContainer = document.querySelector('.search_result')
+            resultsContainer.innerHTML = ''; // 기존 결과 초기화
+
+            data.forEach(result => {
+                // 제목과 버튼을 포함한 HTML 문자열 생성
+                const resultHTML = `
+                    <div class="playlist-item">
+                        <div>${result.Title} ${result.length} ${result.channelTitle}</div>
+                        <input data-videoid="${result.Id}" class="search_start" type="button" value="시작">
+                    </div>
+                `;
                 
-              var div = document.createElement('div')
-              div.innerText = result[i].Title + " | " + result[i].channelTitle + " | "+ result[i].length
-              document.querySelector('.search_result').appendChild(div)
-              
-              var add_btn = document.createElement("input")
-              add_btn.setAttribute('type', 'button')
-              add_btn.setAttribute('value', "시작")
-              add_btn.setAttribute('data-videoId', result[i].Id)
-              add_btn.setAttribute('class', "add_btn")
-              add_btn.addEventListener('click', add_song)
-              document.querySelector('.search_result').appendChild(add_btn)
-
-            }
-            
-          } else {
-            var result = await r.text()
-
-            document.querySelector('.search_result').innerText = result
-
-          }
+                // 결과를 컨테이너에 추가
+                resultsContainer.innerHTML += resultHTML; // 한 번에 추가
+            });
         })
 
       }
 
 
-      function add_song(e) {
+      function add_song(videoId) {
         fetch(`/start`, {
             method : 'POST',
             headers : {'Content-Type' : 'application/json'},
             body : JSON.stringify({
-              url : `https://www.youtube.com/watch?v=${e.target.dataset.videoid}`
+              url : `https://www.youtube.com/watch?v=${videoId}`
             })
         }).then(function(response) {
                 console.log(response.redirected, response.url)
@@ -152,6 +144,23 @@
             })
         
       }
+
+      document.addEventListener('DOMContentLoaded', () => {
+            const searchContainer = document.querySelector('.search_result');
+            // Playlist 버튼에 이벤트 리스너 추가
+            searchContainer.addEventListener('click', function(event) {
+                const target = event.target;
+
+                // 새로운 제안 받기 버튼 클릭 시
+                if (target.classList.contains('search_start')) {
+                    const videoId = target.getAttribute('data-videoid');
+                    add_song(videoId);
+                }
+
+            });
+
+            
+        });
     </script>
 </body>
 </html>

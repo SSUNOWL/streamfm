@@ -247,7 +247,8 @@
 
                 result.forEach(item => {
                     const resultItem = document.createElement('div');
-                    resultItem.className = 'playlist-item'; // 검색 결과에 playlist-item 클래스 적용
+                    resultItem.className = 'playlist-item '; // 검색 결과에 playlist-item 클래스 적용
+                    resultItem.setAttribute('id', item.Id)
                     resultItem.innerHTML = `
                         <div>${item.Title} ${item.length} ${item.channelTitle}</div>
                         <div class="button-group">
@@ -294,11 +295,7 @@
         var playlist = document.querySelector('.playlist')
         var suggestion = document.querySelector('.suggestion')
         var search = document.querySelector('.search_result')
-        if (data.suggest == "false") {
-          data.suggest = false
-        } else {
-          data.suggest = true
-        }
+       
         if ( search.children[data.videoId]) {
           if ( !data.suggest ) {
             search.removeChild(search.children[data.videoId])
@@ -504,9 +501,7 @@
                     delete_song(videoId, title, length, true);
                 }
             });
-            console.log(event.target)
             searchContainer.addEventListener('click', function(event) {
-              console.log('search')
                 const target = event.target;
 
                 // 추가 버튼 클릭 시

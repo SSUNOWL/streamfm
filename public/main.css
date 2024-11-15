@@ -1,156 +1,157 @@
 body {
-    margin: 0;
-  }
-  .nav {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    background-color: #333;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: #333;
 }
 
 .nav a {
-    color: white; /* 글씨 색상 */
-    text-decoration: none; /* 밑줄 없애기 */
-    padding: 10px;
-    transition: color 0.3s; /* 색상 변화에 부드러운 전환 효과 추가 */
+  color: white; /* 글씨 색상 */
+  text-decoration: none; /* 밑줄 없애기 */
+  padding: 10px;
+  transition: color 0.3s; /* 색상 변화에 부드러운 전환 효과 추가 */
 }
 
 .nav a:hover {
-    color: #ccc; /* 호버 시 색상 변화 */
+  color: #ccc; /* 호버 시 색상 변화 */
 }
-  .logo {
-    font-weight: bold;
-  }
 
-  .grey-bg {
-    background: #eee;
-  }
-  .white-bg {
-    background: white;
-    border-radius: 5px;
-  }
-  
-  .list-box h4{
-    font-size: 16px;
-    margin: 5px;
-  }
-  .list-box p {
-    font-size: 13px;
-    margin: 5px;
-    color: grey;
-  }
+.logo {
+  font-weight: bold;
+}
 
-  input,div {
-    box-sizing: border-box;
-  }
-  .progress {
-    flex: 10;
-    position: relative;
-    display: flex;
-    flex-basis: 100%;
-    height: 5px;
-    transition: height 0.3s;
-    background: rgba(0, 0, 0, 0.5);
-    cursor: ew-resize;
-  }
-  
-  .progress_filled {
-    width: 50%;
-    background: #28a745;
-    flex: 0;
-    flex-basis: 50%;
-  }
-  .player {
-    display: none;
-  }
-  
-  input,div {
-    box-sizing: border-box;
-  }
-  .playlist {
-    overflow-y: auto;
-    height: 300px;
-  }
-  .suggestion {
-    overflow-y: auto;
-    height: 300px;
-  }
-  .search_result {
-    overflow-y: scroll;
-    height: 100px;
-  }
-  .norm_form .form_box {
-    float: left;
-  }
-  .norm_form {
-    background: #eee;
-    float: right;
-    width: 100%
-  }
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
+.grey-bg {
+  background: #eee;
+}
+
+.white-bg {
+  background: white;
+  border-radius: 8px; /* 둥근 모서리 */
+  padding: 20px; /* 패딩 추가 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+}
+
+h4 {
+  color: #333;
+  margin-bottom: 10px; /* 제목 간격 조정 */
+}
+
+.room-list {
+  overflow-y: auto;
+  height: 300px;
+}
+
+.list-box a {
+  text-decoration: none; /* 밑줄 제거 */
+  color: #218838; /* 부모 요소의 색상 사용 */
+}
+
+input, div {
+  box-sizing: border-box;
+}
+
+.progress {
+  flex: 10;
+  position: relative;
+  display: flex;
+  flex-basis: 100%;
+  height: 5px;
+  transition: height 0.3s;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: ew-resize;
+}
+
+.progress_filled {
+  width: 50%;
+  background: #28a745;
+  flex: 0;
+  flex-basis: 50%;
+}
+
+.player {
+  display: none;
+}
+
+.playlist {
+  overflow-y: auto;
+  height: 300px;
+}
+
+.suggestion {
+  overflow-y: auto;
+  height: 300px;
+}
+
+.search_result {
+  overflow-y: scroll;
+  height: 100px;
 }
 
 .container {
-    margin: 20px;
-    padding: 20px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* background: #007bff; */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .playhead {
-    display: flex;
-    align-items: center;
-    margin-top: 10px;
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
 }
 
 .playlist, .suggestion {
-    margin-top: 20px;
+  margin-top: 20px;
 }
 
 .playlist-item, .suggestion-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
 }
 
 .playlist-item:last-child, .suggestion-item:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .button-group {
-    display: flex;
-    gap: 10px; /* 버튼 간 간격 */
+  display: flex;
+  gap: 10px; /* 버튼 간 간격 */
 }
 
 input[type="button"] {
-    padding: 5px 10px;
-    border: none;
-    background: #28a745;
-    color: #fff;
-    border-radius: 5px;
-    cursor: pointer;
+  padding: 5px 10px;
+  border: none;
+  background: #28a745;
+  color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 input[type="button"]:hover {
-    background: #218838;
+  background: #218838;
 }
 
 input[type="range"] {
-    width: 100%;
+  width: 100%;
 }
+
 .volume_bar {
   width: 90%;
   border-radius: 8px;
@@ -209,4 +210,55 @@ input[type="range"] {
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+}
+
+.form-box button {
+  padding: 10px;
+  background-color: #28a745; /* 버튼 색상 */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.form-box button:hover {
+  background-color: #218838; /* 호버 색상 */
+}
+
+/* 추가된 부분 */
+.normal-container {
+  overflow-y: auto;
+  height: 300px;
+}
+.normal-row {
+  display: flex; /* 플렉스 박스 사용 */
+  overflow-x: auto; /* 수평 스크롤 가능 */
+  white-space: nowrap; /* 줄 바꿈 방지 */
+  margin-bottom: 20px; /* 각 리스트 간의 간격 */
+}
+.normal-button {
+  padding: 10px;
+  background-color: #FF0000; /* 유튜브 색상 */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.normal-button:hover {
+  background-color: #CC0000; /* 호버 시 어두운 빨간색 */
+}
+.form_box {
+  background: white; /* 카드 배경색 */
+  border-radius: 8px; /* 둥근 모서리 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+  margin: 10px; /* 카드 간의 간격 */
+  padding: 15px; /* 카드 안쪽 패딩 */
+  transition: transform 0.3s; /* 확대 효과를 위한 트랜지션 */
+}
+
+.form_box:hover {
+  transform: scale(1.05); /* 호버 시 확대 효과 */
 }
