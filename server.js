@@ -140,7 +140,11 @@ app.post('/register',  async(req, res) => {
               res.send('아이디가 동일함')
           } else {
               let hash = await bcrypt.hash(req.body.password, 10)
-              await db.collection('user').insertOne({username: req.body.username, password: hash});
+              await db.collection('user').insertOne({
+                username: req.body.username,
+                password: hash,
+                
+              });
               res.redirect('/start') //특정 페이지로 이동
           }
           
@@ -156,7 +160,7 @@ app.post('/register',  async(req, res) => {
 //id/password외 다른것도 제출받아서 검증하고싶으면 passReqToCallback 옵션을 활용하면 됨
 passport.use(new LocalStrategy(async (입력한아이디, 입력한비번, cb) => {
   let result = await db.collection('user').findOne({ username : 입력한아이디})
-  //console.log(입력한아이디, 입력한비번)
+  // console.log("passport" , 입력한아이디, 입력한비번)
   if (!result) {
     return cb(null, false, { message: '아이디 DB에 없음' })
   }
@@ -170,12 +174,45 @@ passport.use(new LocalStrategy(async (입력한아이디, 입력한비번, cb) =
   }
 }))
 
+passport.use(new GoogleStrategy({
+  clientID : process.env.CLIENT_ID,
+  clientSecret : process.env.CLIENT_SECRET,
+  callbackURL : "http://localhost:8080/auth/google/secrets",
+  userProfile:"https://www.googleapis.com/oauth2/v3/userinfo"
+},
+  async function ( accessToken, refreshToken, profile, cb ) {
+    //구글 로그인의 경우 mongodb에 _id정보가 없기때문에 req.user 로 다른 정보를 가져올때 할 수 없음
+    // 따라서 user정보를 하나가져다 주자 ; 하지만 username에 그냥 profile displayname = 김선재 박아버려서 구조조정이 필요할듯
+    if ( profile ) {
+
+      var result = await db.collection('user').findOne({ google_id : profile.id})
+      if ( !result) {
+        let regist = await db.collection('user').insertOne({
+          google_id : profile.id,
+          username : profile.displayName,
+
+        })
+
+        result = await db.collection('user').findOne({ _id : new ObjectId(regist.insertedId)})
+      }
+      return cb(null, {
+        _id: result._id,
+        username : result.username,
+
+      })
+    } else {
+      return cb(null, false, {message: 'profile생성 안됨'})
+    } 
+    
+  }
+))
+
 //실행시키고 싶을 때 passport.authenticate('local')사용
 
 passport.serializeUser((user, done) => {
-  //console.log(user) //user는 db에 있는 user정보를 알려줌
+  // console.log("serail" ,user) //user는 db에 있는 user정보를 알려줌
   process.nextTick(() => {
-    done(null, { id: user._id, username: user.username })
+    done(null, { id: user._id, username: user.username})
       //성공적으로 로그인시 세션 document발행해줌 -> user정보의 _id를 쿠키에 적어줌
       // 
   })
@@ -187,8 +224,10 @@ passport.serializeUser((user, done) => {
 //유저가 보낸 쿠키 분석
 //이코드 밑에서 요청.user를 사용하면 유저의 정보를 가져올 수 있음
 passport.deserializeUser(async(user, done) => {
+  // console.log("desirial", user)
   let result = await db.collection('user').findOne({_id : new ObjectId(user.id)})
   delete result.password
+  
   process.nextTick(() => {
     
     return done(null, user)
@@ -217,6 +256,15 @@ app.post('/login', async(req, res, next) => {
   })(req, res, next)
   
 })
+
+app.get('/auth/google', passport.authenticate('google', { scope : ["profile"]}))
+
+app.get('/auth/google/secrets', 
+  passport.authenticate('google', { failureRedirect : '/login'}),
+  function(req, res) {
+    res.redirect('/start')
+  }
+)
 
 app.get('/logout', async(req, res) => {
   if ( req.user ) {
