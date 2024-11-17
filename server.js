@@ -1,4 +1,4 @@
- 
+const GoogleStrategy = require('passport-google-oauth20').Strategy; 
 const express = require("express");
 const app = express();
 
