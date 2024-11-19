@@ -130,6 +130,11 @@ app.post('/register',  async(req, res) => {
   try {
           let all_user = await db.collection('user').find().toArray()
           var is_same = false 
+
+          if (req.body.password != req.body.password_2) {
+            res.send(('비밀번호가 다름'))
+          }
+
           for ( var i in all_user) {
               
               if (all_user[i].username == req.body.username ) {
@@ -177,7 +182,7 @@ passport.use(new LocalStrategy(async (입력한아이디, 입력한비번, cb) =
 passport.use(new GoogleStrategy({
   clientID : process.env.CLIENT_ID,
   clientSecret : process.env.CLIENT_SECRET,
-  callbackURL : "http://localhost:8080/auth/google/secrets",
+  callbackURL : "http://http://streamfm.ap-northeast-2.elasticbeanstalk.com/auth/google/secrets",
   userProfile:"https://www.googleapis.com/oauth2/v3/userinfo"
 },
   async function ( accessToken, refreshToken, profile, cb ) {

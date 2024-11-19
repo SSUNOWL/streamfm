@@ -9,7 +9,7 @@
 <body>
     <body class="grey-bg">
         <%- include('nav.ejs') %>
-        
+        <div class="container">
         <form class="form-box" action="/login" method="POST">
             <h4>로그인</h4>
             <input name="username" placeholder="ID를 입력하세요">
@@ -17,10 +17,11 @@
             <button type="submit">로그인</button>
         </form> 
 
-        <a class="btn btn-block" href="/auth/google" role="button">구글 로그인</a>
-
-        <a href="/register">회원가입</a>
-      </body>
+        <div class="list-box">
+        <a href="/register">계정이 없으신가요? 클릭 후 회원가입을 하세요</a>
+        </div>
+        </div>
+    </body>
 
 
 </body>
