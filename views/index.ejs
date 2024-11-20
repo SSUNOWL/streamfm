@@ -25,8 +25,9 @@
             </div>
             <div id="time"></div>
             <input type="button" value="Live" onclick="golive()">
+            <% if ( data.islogin) { %>
             <input type="button" value="다음 곡" onclick="skip()">
-
+            <% } %>
             <h2>Volume</h2>
             <input id="mute_btn" type="button" value="음소거 해제">
             <input id="volume_bar" class="volume_bar" type="range" value="<%= data.volume %>" min="0" step="1" max="100" oninput="play_volume()">
@@ -45,6 +46,7 @@
 
     <div class="container playlist-container">
         <h4>Playlist
+
         <% if (data.loop) { %>
           <label class="custom-checkbox">
             <input type="checkbox" class="loop" checked>
@@ -64,10 +66,12 @@
             <% for (var i = 0; i < data.list.length; i++) { %>
                 <div class="playlist-item" id="<%= data.list[i].videoId %>">
                     <div><%= data.list[i].title %> <%= data.secto(data.list[i].length) %></div>
+                    <% if ( data.islogin) { %>
                     <div class="button-group">
                         <input value="새로운 제안 받기" type="button" class="new_suggest_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
                         <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.list[i].videoId %>" data-title="<%= data.list[i].title %>" data-length="<%= data.list[i].length %>">
                     </div>
+                    <% } %>
                 </div>
             <% } %>
         </div>
@@ -77,19 +81,23 @@
             <% for (var i = 0; i < data.suggestion.length; i++) { %>
                 <div class="suggestion-item" id="<%= data.suggestion[i].videoId %>">
                     <div><%= data.suggestion[i].title %> <%= data.secto(data.suggestion[i].length) %></div>
+                    <% if ( data.islogin) { %>
                     <div class="button-group">
                         <input type="button" value="추가" class="suggest_add_btn" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>">
                         <input value="삭제" type="button" class="delete_btn" data-videoid="<%= data.suggestion[i].videoId %>" data-title="<%= data.suggestion[i].title %>" data-length="<%= data.suggestion[i].length %>">
                     </div>
+                    <% } %>
                 </div>
             <% } %>
         </div>
     </div>
-
+    
     <div class="container search-container">
+      <% if ( data.islogin) { %>
         <input class="word" type="text" placeholder="검색어 입력">
         <input class="submit" value="검색" type="button" onclick="search_word()">
         <div class="search_result"></div>
+      <% } %>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
@@ -330,7 +338,7 @@
       }
 
       socket.on('new_suggestion', (data) => {
-        refresh(data.list, data.suggestion, data.suggestion_videoId)
+        refresh(data.list, data.suggestion)
       })
       
       socket.on('golive', (data) => {
@@ -416,11 +424,13 @@
 
                 newItem.innerHTML = `
                     <div>${item.title} ${secto(item.length)}</div>
+
                     <div class="button-group">
                         <input value="새로운 제안 받기" type="button" class="new_suggest_btn" data-videoid="${item.videoId}" data-title="${item.title}" data-length="${item.length}">
                         <input value="삭제" type="button" class="delete_btn" data-videoid="${item.videoId}" data-title="${item.title}" data-length="${item.length}">
                     </div>
                 `;
+
                 playlist.appendChild(newItem);
             });
 
@@ -439,6 +449,14 @@
                 `;
                 suggestionContainer.appendChild(newSuggestion);
             });
+            console.log(`<%=data.islogin%>`)
+
+            if ( `<%=data.islogin%>` == 'false') {
+              const notlogin = document.querySelectorAll('.button-group')
+              notlogin.forEach(element => {
+                element.remove();
+              });
+            }
         }
       function secto(seconds) {
           seconds = parseInt(seconds)
@@ -459,7 +477,7 @@
       document.addEventListener('DOMContentLoaded', () => {
             const playlistContainer = document.querySelector('.playlist');
             const suggestionContainer = document.querySelector('.suggestion');
-            const searchContainer = document.querySelector('.search_result');
+            const searchContainer = document.querySelector('.search-container');
             // Playlist 버튼에 이벤트 리스너 추가
             playlistContainer.addEventListener('click', function(event) {
                 const target = event.target;
@@ -511,10 +529,12 @@
                     const length = target.getAttribute('data-length');
                     add_song(videoId, title, length, false);
                 }
+                // 검색 버튼 클릭 시
+                if ( target.classList.contains('submit')) {
+                  search_word()
+                }
             });
 
-            // 검색 버튼 클릭 시
-            document.querySelector('.submit').addEventListener('click', search_word);
 
             // 볼륨 조절 슬라이더 이벤트 리스너 추가
             document.getElementById('volume_bar').addEventListener('input', play_volume);

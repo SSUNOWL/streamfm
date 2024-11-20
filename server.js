@@ -7,7 +7,7 @@ require('dotenv').config()
 const methodOverride = require('method-override')
 const bcrypt = require('bcrypt') 
 
-const { MongoClient, ObjectId } = require('mongodb')
+const { MongoClient, ObjectId, ConnectionCheckOutFailedEvent } = require('mongodb')
 var cookieParser = require('cookie-parser')
 const cors = require("cors");
 app.set('view engine', 'ejs')
@@ -281,63 +281,93 @@ app.get('/logout', async(req, res) => {
   
 })
 
+function checkLogin(req, res, next) {
+  if(!req.user){
+      res.send('로그인좀')
+  } else {
+      next()
+  }
+}
 
+function checkRoomin(req, res, next) {
+  if (req.user) {
+
+    const idx = room_num[req.body.roomId].findIndex(function(item) {return item.username === req.user.username}) // findIndex = find + indexOf
+
+    if (idx > -1) {
+      next()
+    } else {
+      res.send('룸안에 속하지 않았습니다.')
+    }
+  } else {
+    res.send('로그인이 필요한 서비스')
+  }
+}
 
 app.get('/index/:roomId', async(req, res) => {
+  try {
+    var basic_info
+    let result = await db.collection('streamroom').findOne({ _id : new ObjectId(req.params.roomId)})
+    
+    var server_time = result.started
+    // var now = new Date()
+    // var start_time = parseInt((now - server_time) / 1000)
+    if ( !req.cookies.volume ) {
+      res.cookie('volume', 50, {
+        maxAge:10000
+      })
+    }
 
-  var basic_info
-  let result = await db.collection('streamroom').findOne({ _id : new ObjectId(req.params.roomId)})
-  
-  var server_time = result.started
-  // var now = new Date()
-  // var start_time = parseInt((now - server_time) / 1000)
-  if ( !req.cookies.volume ) {
-    res.cookie('volume', 50, {
-      maxAge:10000
-    })
+    res.render('index.ejs', {data : {
+      roomId : req.params.roomId, 
+      list : result.list,
+      suggestion : result.suggestion,
+      loop : result.loop,
+      videoId : result.list[0].videoId,
+      title : result.list[0].title,
+      length : result.list[0].length,
+      started : new Date(result.started),
+      secto : secto,
+      volume : req.cookies.volume ? req.cookies.volume : 50,
+      islogin : req.user ? true : false
+    }})
+  //데이터에 넣을 떄 추가
+  } catch (e) {
+    res.status(500).send('서버에러')
   }
-
-  res.render('index.ejs', {data : {
-    roomId : req.params.roomId, 
-    list : result.list,
-    suggestion : result.suggestion,
-    loop : result.loop,
-    videoId : result.list[0].videoId,
-    title : result.list[0].title,
-    length : result.list[0].length,
-    started : new Date(result.started),
-    secto : secto,
-    volume : req.cookies.volume ? req.cookies.volume : 50
-  }})
- //데이터에 넣을 떄 추가
 
 })
 
-app.post('/new_suggestion', async(req, res) => {
-  var result = await db.collection('streamroom').findOne({_id : new ObjectId(req.body.roomId)})
-  const idx = result.list.findIndex(function(item) {return item.videoId === req.body.videoId}) // findIndex = find + indexOf
-  
-  if (idx > -1) {
-    var suggest = await youtubesearchapi.GetVideoDetails(req.body.videoId)
-    var suggestion = []
-    for ( var i = 0 ; i < suggest.suggestion.length ; i++) {
-      if ( !suggest.suggestion[i].isLive ) {
-        suggestion.push({videoId : suggest.suggestion[i].id, title : suggest.suggestion[i].title, length : parseInt(timeto(suggest.suggestion[i].length.simpleText))})
-      } 
+app.post('/new_suggestion', checkRoomin, async(req, res) => {
+  try{
+    
+    var result = await db.collection('streamroom').findOne({_id : new ObjectId(req.body.roomId)})
+    const idx = result.list.findIndex(function(item) {return item.videoId === req.body.videoId}) // findIndex = find + indexOf
+    
+    if (idx > -1) {
+      var suggest = await youtubesearchapi.GetVideoDetails(req.body.videoId)
+      var suggestion = []
+      for ( var i = 0 ; i < suggest.suggestion.length ; i++) {
+        if ( !suggest.suggestion[i].isLive ) {
+          suggestion.push({videoId : suggest.suggestion[i].id, title : suggest.suggestion[i].title, length : parseInt(timeto(suggest.suggestion[i].length.simpleText))})
+        } 
+      }
+    
+      await db.collection('streamroom').updateOne( {_id : new ObjectId(req.body.roomId)}, {$set : {
+        suggestion : suggestion
+      }});
+    
+      res.send(suggestion)
+      io.to(req.body.roomId).emit('new_suggestion', {
+        suggestion_videoId : req.body.videoId,
+        list : result.list,
+        suggestion : suggestion,
+      })
+    } else {
+      res.send('잘못된 videoId')
     }
-  
-    await db.collection('streamroom').updateOne( {_id : new ObjectId(req.body.roomId)}, {$set : {
-      suggestion : suggestion
-    }});
-  
-    res.send(suggestion)
-    io.to(req.body.roomId).emit('new_suggestion', {
-      suggestion_videoId : req.body.videoId,
-      list : result.list,
-      suggestion : suggestion,
-    })
-  } else {
-    res.send('잘못된 videoId')
+  } catch(e) {
+    res.status(500).send('서버에러')
   }
   
 })  
@@ -411,80 +441,77 @@ app.get('/start', async(req, res) => {
   }
 })
 
-app.post('/start', async(req, res) => {  
-  if ( req.user ) {
-    var url = new URL(req.body.url)
-    const urlparams = url.searchParams
-    var playlist = []
-    var suggestion = []
-    // console.log(req.body.random)
-    if ( urlparams.get('list') ) {
-      var playlists = await youtubesearchapi.GetPlaylistData( urlparams.get('list') )
+app.post('/start', checkLogin, async(req, res) => {  
+  var url = new URL(req.body.url)
+  const urlparams = url.searchParams
+  var playlist = []
+  var suggestion = []
+  // console.log(req.body.random)
+  if ( urlparams.get('list') ) {
+    var playlists = await youtubesearchapi.GetPlaylistData( urlparams.get('list') )
 
-      if ( urlparams.get('index') ) {
+    if ( urlparams.get('index') ) {
 
-        for ( var i = (urlparams.get('index') - 1) ; i < playlists.items.length ; i++) {
-          playlist.push({videoId : playlists.items[i].id, title : playlists.items[i].title, length : parseInt(timeto(playlists.items[i].length.simpleText))})
-        }
-        if ( req.body.random ) shuffle(playlist)
-      } else {
-        for ( var i = 0 ; i < playlists.items.length ; i++) {
-          playlist.push({videoId : playlists.items[i].id, title : playlists.items[i].title, length : parseInt(timeto(playlists.items[i].length.simpleText))})
-        }
-        if ( req.body.random ) shuffle(playlist)
-
+      for ( var i = (urlparams.get('index') - 1) ; i < playlists.items.length ; i++) {
+        playlist.push({videoId : playlists.items[i].id, title : playlists.items[i].title, length : parseInt(timeto(playlists.items[i].length.simpleText))})
       }
-      } else {
-        
-        var video
-        var search_url = await youtubesearchapi.GetListByKeyword(`"` + urlparams.get('v') + `"`, false, 10, [{type : 'video'}] )
+      if ( req.body.random ) shuffle(playlist)
+    } else {
+      for ( var i = 0 ; i < playlists.items.length ; i++) {
+        playlist.push({videoId : playlists.items[i].id, title : playlists.items[i].title, length : parseInt(timeto(playlists.items[i].length.simpleText))})
+      }
+      if ( req.body.random ) shuffle(playlist)
+
+    }
+    } else {
+      
+      var video
+      var search_url = await youtubesearchapi.GetListByKeyword(`"` + urlparams.get('v') + `"`, false, 10, [{type : 'video'}] )
+      for ( var song of search_url.items ) {
+        if (urlparams.get('v') == song.id) {
+          video = song
+    
+        }
+      }
+      if ( !video ) {
+        var search_url = await youtubesearchapi.GetListByKeyword(urlparams.get('v'), false, 10, [{type : 'video'}] )
         for ( var song of search_url.items ) {
           if (urlparams.get('v') == song.id) {
             video = song
       
           }
         }
-        if ( !video ) {
-          var search_url = await youtubesearchapi.GetListByKeyword(urlparams.get('v'), false, 10, [{type : 'video'}] )
-          for ( var song of search_url.items ) {
-            if (urlparams.get('v') == song.id) {
-              video = song
-        
-            }
-          }
-        }
-
-      
-        var suggest = await youtubesearchapi.GetVideoDetails(urlparams.get('v'))
-        
-        playlist.push({videoId : urlparams.get('v'), title : video.title, length : parseInt(timeto(video.length.simpleText))})
-        for ( var i = 0 ; i < suggest.suggestion.length ; i++) {
-          if ( !suggest.suggestion[i].isLive ) {
-            suggestion.push({videoId : suggest.suggestion[i].id, title : suggest.suggestion[i].title, length : parseInt(timeto(suggest.suggestion[i].length.simpleText))})
-          } 
-        }
-
-        await db.collection('begin').insertOne({
-          user_id : new ObjectId(req.user.id),
-          videoId : urlparams.get('v'),
-          title : video.title,
-          length : parseInt(timeto(video.length.simpleText)),
-
-        })
-      } 
-      var started = Date.now()
-
-      let result = await db.collection('streamroom').insertOne({
-        list : playlist, 
-        started : new Date(started),
-        suggestion : suggestion,
-        loop : false,
-      })
-      res.redirect('/index/' + result.insertedId)
-      } else {
-        res.status(300).send('로그인을 해야합니다.')
       }
-})
+
+    
+      var suggest = await youtubesearchapi.GetVideoDetails(urlparams.get('v'))
+      
+      playlist.push({videoId : urlparams.get('v'), title : video.title, length : parseInt(timeto(video.length.simpleText))})
+      for ( var i = 0 ; i < suggest.suggestion.length ; i++) {
+        if ( !suggest.suggestion[i].isLive ) {
+          suggestion.push({videoId : suggest.suggestion[i].id, title : suggest.suggestion[i].title, length : parseInt(timeto(suggest.suggestion[i].length.simpleText))})
+        } 
+      }
+
+      await db.collection('begin').insertOne({
+        user_id : new ObjectId(req.user.id),
+        videoId : urlparams.get('v'),
+        title : video.title,
+        length : parseInt(timeto(video.length.simpleText)),
+
+      })
+    } 
+    var started = Date.now()
+
+    let result = await db.collection('streamroom').insertOne({
+      list : playlist, 
+      started : new Date(started),
+      suggestion : suggestion,
+      loop : false,
+    })
+    res.redirect('/index/' + result.insertedId)
+    }
+)
 
 
 
@@ -494,7 +521,7 @@ app.post('/update_volume', (req, res) => {
   res.send('volume updated')
 })
 
-app.post('/search', async(req, res) => {
+app.post('/search', checkLogin, async(req, res) => {
   var result = await youtubesearchapi.GetListByKeyword(req.query.word + 'auto-generated', false, 5, [{type: 'video'}])
   var auto_playlist = []
   var search_playlist = []
@@ -550,21 +577,29 @@ app.post('/golive', async(req, res) => {
 })
 
 app.post('/loop', async(req, res) => {
-  var result = await db.collection('streamroom').updateOne( {_id : new ObjectId(req.body.roomId)}, {$set : {
-      loop : req.body.loop
-  }});
-  if(result.modifiedCount) {
-    res.status(200).send("convert to " + req.body.loop)
-  } else { 
-    res.status(501).send('server error')
+  if ( req.user ) {
+    var result = await db.collection('streamroom').updateOne( {_id : new ObjectId(req.body.roomId)}, {$set : {
+        loop : req.body.loop
+    }});
+    if(result.modifiedCount) {
+      res.status(200).send("convert to " + req.body.loop)
+    } else { 
+      res.status(501).send('server error')
+    }
+  
+    io.to(req.body.roomId).emit('loop', {
+      loop: req.body.loop
+    })
+  } else {
+    res.status(300).send('로그인 하셔야 바뀝니다.')
+    io.to(req.body.roomId).emit('loop', {
+      loop: !req.body.loop
+    })
   }
-
-  io.to(req.body.roomId).emit('loop', {
-    loop: req.body.loop
-  })
 })
 
-app.post('/add', async(req, res) => {
+app.post('/add', checkRoomin, async(req, res) => {
+  try {
   var result = await db.collection('streamroom').findOne({_id : new ObjectId(req.body.roomId)})
   var add_song
 
@@ -618,9 +653,12 @@ app.post('/add', async(req, res) => {
     suggestion: new_result.suggestion,
     suggest : req.body.suggest
   })
+  } catch (e) {
+    res.status(500).send('서버에러')
+  }
 })
 
-app.post('/delete', async(req, res) => {
+app.post('/delete', checkRoomin, async(req, res) => {
   var result = await db.collection('streamroom').findOne({_id : new ObjectId(req.body.roomId)})
   var skip
 
@@ -736,83 +774,85 @@ io.on('connection', (socket) => {
   })
 
   socket.on('onended', async(data) => {
-    var result = await db.collection('streamroom').findOne({_id : new ObjectId(data.roomId)})
-    var now = new Date()
-    
-    var ended = new Date(result.started.getTime() + (result.list[0].length - 1) * 1000)
-    // console.log(result.started.getTime(), (result.list[0].length) * 1000, ended, now, ended< now)
-    // console.log(data.duration, result.list[0].length)
-    
-    const isvideo = (result.list[0].videoId == data.videoId)
-    // console.log(isvideo)
-    if ( isvideo ) {  // 바뀌지 않음
-      if ( (ended < now ) || data.skip ) {
-        var whole = []
-        Array.prototype.push.apply(whole, result.list)
-        Array.prototype.push.apply(whole, result.suggestion)
-        // console.log(whole.length)
-        
-        if ( result.loop == false || data.deleted == true) {
-          if (whole.length > 2) {
-            result.list.shift()
-          } else {
-            result.list.shift()
-            whole.shift()
-            var new_suggest = await youtubesearchapi.GetVideoDetails(whole[0].videoId)
-            // console.log(new_suggest.suggestion)
-            for ( var i = 0 ; i < new_suggest.suggestion.length ; i++) {
-              if ( !new_suggest.suggestion[i].isLive ) {
-                result.suggestion.push({videoId : new_suggest.suggestion[i].id, title : new_suggest.suggestion[i].title, length : parseInt(timeto(new_suggest.suggestion[i].length.simpleText))})
-              } 
-            }
-          }
-        } else {
-          var tmp = result.list[0]
-          result.list.shift()
-          result.list.push(tmp)
+    if (socketid_room[socket.id] == data.roomId) {
+      var result = await db.collection('streamroom').findOne({_id : new ObjectId(data.roomId)})
+      var now = new Date()
+      
+      var ended = new Date(result.started.getTime() + (result.list[0].length - 1) * 1000)
+      // console.log(result.started.getTime(), (result.list[0].length) * 1000, ended, now, ended< now)
+      // console.log(data.duration, result.list[0].length)
+      
+      const isvideo = (result.list[0].videoId == data.videoId)
+      // console.log(isvideo)
+      if ( isvideo ) {  // 바뀌지 않음
+        if ( (ended < now ) || data.skip ) {
+          var whole = []
+          Array.prototype.push.apply(whole, result.list)
+          Array.prototype.push.apply(whole, result.suggestion)
+          // console.log(whole.length)
           
+          if ( result.loop == false || data.deleted == true) {
+            if (whole.length > 2) {
+              result.list.shift()
+            } else {
+              result.list.shift()
+              whole.shift()
+              var new_suggest = await youtubesearchapi.GetVideoDetails(whole[0].videoId)
+              // console.log(new_suggest.suggestion)
+              for ( var i = 0 ; i < new_suggest.suggestion.length ; i++) {
+                if ( !new_suggest.suggestion[i].isLive ) {
+                  result.suggestion.push({videoId : new_suggest.suggestion[i].id, title : new_suggest.suggestion[i].title, length : parseInt(timeto(new_suggest.suggestion[i].length.simpleText))})
+                } 
+              }
+            }
+          } else {
+            var tmp = result.list[0]
+            result.list.shift()
+            result.list.push(tmp)
+            
 
-        }
-        if ( result.list.length > 0 ) {
-          // var detail = await youtubesearchapi.GetVideoDetails(result.list[0].videoId)
-          // console.log(detail)
-          var started = new Date()
-
-        await db.collection('streamroom').updateOne( {_id : new ObjectId(data.roomId)}, {$set : {
-          list : result.list, 
-          started : new Date(started),
-          suggestion : result.suggestion,
-          // detail : {channel: detail.channel, description: detail.description, keywords: detail.keywords}
-          }});
-        } else {
-          var list = []
-          list.push(result.suggestion[0])
-          result.suggestion.shift()
-          // var detail = await youtubesearchapi.GetVideoDetails(list[0].videoId)
-          var started = new Date()
+          }
+          if ( result.list.length > 0 ) {
+            // var detail = await youtubesearchapi.GetVideoDetails(result.list[0].videoId)
+            // console.log(detail)
+            var started = new Date()
 
           await db.collection('streamroom').updateOne( {_id : new ObjectId(data.roomId)}, {$set : {
-            list : list, 
+            list : result.list, 
             started : new Date(started),
             suggestion : result.suggestion,
             // detail : {channel: detail.channel, description: detail.description, keywords: detail.keywords}
-
             }});
-        }
-        var after_result = await db.collection('streamroom').findOne({_id : new ObjectId(data.roomId)})
+          } else {
+            var list = []
+            list.push(result.suggestion[0])
+            result.suggestion.shift()
+            // var detail = await youtubesearchapi.GetVideoDetails(list[0].videoId)
+            var started = new Date()
 
-        io.to(data.roomId).emit('load', {
-          videoId : after_result.list[0].videoId,
-          title : after_result.list[0].title,
-          started : new Date(after_result.started),
-          length : after_result.list[0].length,
-          exvideoId : data.videoId,
-          list: after_result.list,
-          suggestion: after_result.suggestion,
-          // detail : after_result.detail
-        })
-      } else { //서버보다 노래가 먼저 끝남
-        io.to(socket.id).emit('golive')
+            await db.collection('streamroom').updateOne( {_id : new ObjectId(data.roomId)}, {$set : {
+              list : list, 
+              started : new Date(started),
+              suggestion : result.suggestion,
+              // detail : {channel: detail.channel, description: detail.description, keywords: detail.keywords}
+
+              }});
+          }
+          var after_result = await db.collection('streamroom').findOne({_id : new ObjectId(data.roomId)})
+
+          io.to(data.roomId).emit('load', {
+            videoId : after_result.list[0].videoId,
+            title : after_result.list[0].title,
+            started : new Date(after_result.started),
+            length : after_result.list[0].length,
+            exvideoId : data.videoId,
+            list: after_result.list,
+            suggestion: after_result.suggestion,
+            // detail : after_result.detail
+          })
+        } else { //서버보다 노래가 먼저 끝남
+          io.to(socket.id).emit('golive')
+        }
       }
     }
   })
