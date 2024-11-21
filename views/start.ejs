@@ -16,6 +16,7 @@
       <p>룸에 참여하거나 새롭게 스트리밍 룸을 만든 후 시작하세요!</p>
 
       <% if (data.user != "") { %>
+        
           <div>
               <h4>유튜브 링크로 시작</h4>
               <form class="form-box" action="/start" method="POST">
@@ -36,6 +37,7 @@
               <input class="submit" value="검색" type="button" onclick="search_word()">
               <div class="search_result"></div>
           </div>
+
 
           <% if (data.song_begin.length > 0) { %>
               <h4>빠른 선곡</h4>
@@ -98,7 +100,7 @@
               <div>방이 없습니다. 새롭게 시작해주세요!</div>
           <% } %>
       </div>
-  </div>    <!-- <%= JSON.stringify(data.normal_suggest) %> -->
+  </div>    
 
     <script>
         

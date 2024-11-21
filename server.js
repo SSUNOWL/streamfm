@@ -508,6 +508,7 @@ app.post('/start', checkLogin, async(req, res) => {
       started : new Date(started),
       suggestion : suggestion,
       loop : false,
+      author : req.body.author,
     })
     res.redirect('/index/' + result.insertedId)
     }
@@ -855,6 +856,18 @@ io.on('connection', (socket) => {
         }
       }
     }
+  })
+
+  socket.on('chat', async(data) => {
+    
+    if (socketid_room[socket.id] == data.roomId) {
+      io.to(data.roomId).emit('new_chat', {
+        msg : data.msg,
+        username : socket.request.user ? socket.request.user.username : "익명",
+        data : new Date(),
+        socketid : socket.id
+      })
+    } 
   })
   
 })

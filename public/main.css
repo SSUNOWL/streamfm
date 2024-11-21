@@ -81,17 +81,22 @@ input, div {
 
 .playlist {
   overflow-y: auto;
-  height: 300px;
 }
 
 .suggestion {
   overflow-y: auto;
-  height: 300px;
 }
 
 .search_result {
   overflow-y: scroll;
   height: 100px;
+}
+.search-container {
+  display: flex; 
+  align-items: center;
+}
+.search-button {
+  margin-left: 10px;
 }
 
 .container {
@@ -261,4 +266,78 @@ input[type="range"] {
 
 .form_box:hover {
   transform: scale(1.05); /* 호버 시 확대 효과 */
+}
+
+#chat-container {
+  background: white;
+  border-radius: 5px;
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+}
+#messages {
+  height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+.message {
+  margin: 10px 0;
+}
+.message.user {
+  text-align: right;
+}
+.message.counter {
+  text-align: left;
+}
+.chat-input {
+  display: flex; 
+  align-items: center;
+}
+input[type="text"] {
+  width: calc(100% - 22px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.send-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+.send-button:hover {
+  background-color: #218838;
+}
+.username {
+  font-size: 0.8em;
+  color: #777;
+}
+.top-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.middle-container {
+  justify-content: center;
+  width: 100%;
+}
+.bottom-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+.box {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 5px;
+  border: 1px solid #ccc; /* 경계선 추가 */
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 450px; /* 높이 제한 */
 }

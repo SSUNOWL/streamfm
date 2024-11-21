@@ -9,7 +9,8 @@
 <body class="grey-bg">
     <%- include('nav.ejs') %>
 
-    <div class="container">
+    <div class="top-container">
+      <div class="box">
         <div class="header">
             <div class="title"><h4></h4></div>
             <span class="is_connect"><h4></h4></span>
@@ -28,11 +29,9 @@
             <% if ( data.islogin) { %>
             <input type="button" value="다음 곡" onclick="skip()">
             <% } %>
-            <h2>Volume</h2>
             <input id="mute_btn" type="button" value="음소거 해제">
             <input id="volume_bar" class="volume_bar" type="range" value="<%= data.volume %>" min="0" step="1" max="100" oninput="play_volume()">
-        </div>
-
+          </div>
         <div class="player-container">
           <label class="custom-checkbox">
             <input type="checkbox" id="videoToggle" class="view" onclick="view()">
@@ -40,11 +39,10 @@
             비디오 보기
           </label>
           <div class="player" id="player"></div>
-        </div> 
+        </div>
+      </div> 
 
-    </div>
-
-    <div class="container playlist-container">
+    <div class="box playlist-container">
         <h4>Playlist
 
         <% if (data.loop) { %>
@@ -75,7 +73,31 @@
                 </div>
             <% } %>
         </div>
+      </div>
+      </div>
+      <% if ( data.islogin) { %>
 
+      <div class="middle-container">
+      <div class="box  search-container">
+          <input class="word" type="text" placeholder="검색어 입력">
+          <input class="submit search-button" value="검색" type="button" onclick="search_word()">
+      </div>
+      <div class="search_result"></div>
+
+      </div>
+      <% } %>
+
+      <div class="bottom-container">
+        <div class="box">
+        <div class="chat-container" id="chat-container">
+          <div class="messages" id="messages"></div>
+          <div class="chat-input">
+          <input type="text" id="user-input" placeholder="메시지를 입력하세요..." />
+          <button class="send-button" id="send-button">전 송</button>
+          </div>
+        </div>
+        </div>
+        <div class="box">
         <h4>Suggestions</h4>
         <div class="suggestion">
             <% for (var i = 0; i < data.suggestion.length; i++) { %>
@@ -89,16 +111,13 @@
                     <% } %>
                 </div>
             <% } %>
+          </div>  
+        </div>
+        
         </div>
     </div>
     
-    <div class="container search-container">
-      <% if ( data.islogin) { %>
-        <input class="word" type="text" placeholder="검색어 입력">
-        <input class="submit" value="검색" type="button" onclick="search_word()">
-        <div class="search_result"></div>
-      <% } %>
-    </div>
+    
 
     <script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
 
@@ -116,8 +135,8 @@
       var player;
       function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-          height: '360',
-          width: '640',
+          height: '180',
+          width: '320',
           videoId: "<%= data.videoId %>",
           playerVars: { 'autoplay': 1, 'controls': 0 },
           events: {
@@ -233,6 +252,29 @@
             refresh(data.list, data.suggestion)
             
       })
+
+      socket.on('new_chat', (data) => {
+        const messagesContainer = document.getElementById('messages');
+
+        if ( socket.id != data.socketid) {
+          const userName = document.createElement('div');
+          userName.classList.add('username');
+          userName.textContent = data.username;
+          
+          const counter_message = document.createElement('div');
+          counter_message.classList.add('message', 'counter');
+
+          counter_message.appendChild(userName);
+
+          counter_message.appendChild(document.createTextNode(data.msg));
+          messagesContainer.appendChild(counter_message);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+
+          
+        }
+      })
+
 
       var setI = setInterval(() => {      
         const percent = (player.getCurrentTime()/player.getDuration())*100
@@ -458,6 +500,8 @@
               });
             }
         }
+
+
       function secto(seconds) {
           seconds = parseInt(seconds)
           var hour = parseInt(seconds/3600) < 10 ? '0' + parseInt(seconds/3600) : parseInt(seconds/3600);
@@ -478,6 +522,8 @@
             const playlistContainer = document.querySelector('.playlist');
             const suggestionContainer = document.querySelector('.suggestion');
             const searchContainer = document.querySelector('.search-container');
+            const sendButton = document.getElementById('send-button');
+
             // Playlist 버튼에 이벤트 리스너 추가
             playlistContainer.addEventListener('click', function(event) {
                 const target = event.target;
@@ -550,6 +596,21 @@
                 }
             });
 
+            sendButton.addEventListener('click', () => {
+              const userInput = document.getElementById('user-input');
+              const messagesContainer = document.getElementById('messages');
+
+              const messageText = userInput.value;
+              if (messageText.trim() !== '') {
+                  const userMessage = document.createElement('div');
+                  userMessage.classList.add('message', 'user');
+                  userMessage.textContent = messageText;
+                  messagesContainer.appendChild(userMessage);
+                  userInput.value = '';
+                  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                  socket.emit('chat', { roomId : `<%= data.roomId %>`, msg : messageText})
+              }
+            })
             // 반복 체크박스 변경 시
             document.querySelector('.loop').addEventListener('change', () => {
                 const loop_btn = document.querySelector('.loop');
