@@ -425,7 +425,9 @@ app.get('/start', async(req, res) => {
   
 
   if ( req.user ) {
-    let song_begin = await db.collection('begin').find({user_id : new ObjectId(req.user.id)}).limit(10).toArray()
+    let song_begin = await db.collection('begin').find({user_id : new ObjectId(req.user.id)}).sort({date : -1}).limit(10).toArray()
+
+
     res.render('start.ejs', {data : {
       room_list : result,
       user : req.user ? req.user.username : "",
@@ -498,7 +500,7 @@ app.post('/start', checkLogin, async(req, res) => {
         videoId : urlparams.get('v'),
         title : video.title,
         length : parseInt(timeto(video.length.simpleText)),
-
+        date : new Date(),
       })
     } 
     var started = Date.now()
@@ -639,7 +641,8 @@ app.post('/add', checkRoomin, async(req, res) => {
       user_id : new ObjectId(req.user.id),
       videoId : req.body.videoId,
       title : add_song.title, 
-      length : parseInt(timeto(add_song.length.simpleText))
+      length : parseInt(timeto(add_song.length.simpleText)),
+      date : new Date(),
     })
   }
 
@@ -655,7 +658,7 @@ app.post('/add', checkRoomin, async(req, res) => {
     suggest : req.body.suggest
   })
   } catch (e) {
-    res.status(500).send('서버에러')
+    res.status(500).send({"msg" : e.msg,"s": e.stack})
   }
 })
 
@@ -705,7 +708,45 @@ app.post('/delete', checkRoomin, async(req, res) => {
 
 })
 
+app.get('/setinterval', async(req, res) => {
+  if ( req.user.username == 'sun325') {
+    res.render('setting.ejs')
+  }
+})
+var setI 
+app.post('/setinterval', async(req, res) => {
+  if ( req.user.username == 'sun325') {
 
+      if ( setI ){
+        clearInterval(setI)
+      }
+      var num =0
+      var now = new Date()
+      var result = await db.collection('streamroom').find().toArray()
+      for ( var i = 0 ; i < result.length ; i++) {
+        if (now - result[i].started - result[i].list[0].length * 1000 > 24*3600*1000 ) {
+          await db.collection('streamroom').deleteOne({_id : new ObjectId(result[i]._id)})
+          num++
+
+        }
+      }
+      console.log(num+'개수만큼 삭제됨')
+      res.send(num+'개수만큼 삭제됨')
+      setI = setInterval(async() => {
+        var num =0
+        var now = new Date()
+        var result = await db.collection('streamroom').find().toArray()
+        for ( var i = 0 ; i < result.length ; i++) {
+          if (now - result[i].started > 24*3600 ) {
+            await db.collection('streamroom').deleteOne({_id : new ObjectId(result[i]._id)})
+            num++
+          }
+        }
+        console.log(num+'개수만큼 삭제됨')      
+      }, 24*3600*1000);
+    
+  }
+})
 
 io.use((socket, next) => {
   if (socket.request.user) {

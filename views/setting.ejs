@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    24시간마다 24시간 이상 사용되지않은 Room 삭제
+
+    <input class="setint" type="button" value="제출">
+
+    <script>
+            document.querySelector('.setint').addEventListener('click', function(event) {    
+                fetch(`/setinterval`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                    })
+                });
+            })
+        
+    </script>
+</body>
+</html>
