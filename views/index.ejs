@@ -75,17 +75,18 @@
         </div>
       </div>
       </div>
-      <% if ( data.islogin) { %>
-
       <div class="middle-container">
       <div class="box  search-container">
+      <% if ( data.islogin) { %>
+
+      
           <input class="word" type="text" placeholder="검색어 입력">
           <input class="submit search-button" value="검색" type="button" onclick="search_word()">
-      </div>
-      <div class="search_result"></div>
+          <div class="search_result"></div>
 
-      </div>
+          </div>
       <% } %>
+    </div>
 
       <div class="bottom-container">
         <div class="box">

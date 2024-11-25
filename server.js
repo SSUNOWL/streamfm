@@ -292,8 +292,11 @@ function checkLogin(req, res, next) {
 function checkRoomin(req, res, next) {
   if (req.user) {
 
-    const idx = room_num[req.body.roomId].findIndex(function(item) {return item.username === req.user.username}) // findIndex = find + indexOf
-
+    const idx = room_num[req.body.roomId].findIndex(function(item) {
+      console.log(item.username, req.user.username)
+      return item.username === req.user.username
+    }) // findIndex = find + indexOf
+    
     if (idx > -1) {
       next()
     } else {
@@ -495,13 +498,16 @@ app.post('/start', checkLogin, async(req, res) => {
         } 
       }
 
-      await db.collection('begin').insertOne({
-        user_id : new ObjectId(req.user.id),
-        videoId : urlparams.get('v'),
-        title : video.title,
-        length : parseInt(timeto(video.length.simpleText)),
-        date : new Date(),
-      })
+      if ( !req.body.begin ) {
+        await db.collection('begin').insertOne({
+          user_id : new ObjectId(req.user.id),
+          videoId : urlparams.get('v'),
+          title : video.title,
+          length : parseInt(timeto(video.length.simpleText)),
+          date : new Date(),
+        })
+      }
+      
     } 
     var started = Date.now()
 
@@ -637,13 +643,16 @@ app.post('/add', checkRoomin, async(req, res) => {
   }});
 
   if ( req.user ) {
-    await db.collection('begin').insertOne({
-      user_id : new ObjectId(req.user.id),
-      videoId : req.body.videoId,
-      title : add_song.title, 
-      length : parseInt(timeto(add_song.length.simpleText)),
-      date : new Date(),
-    })
+
+    if ( !req.body.begin ) {
+      await db.collection('begin').insertOne({
+        user_id : new ObjectId(req.user.id),
+        videoId : req.body.videoId,
+        title : add_song.title,
+        length : parseInt(timeto(add_song.length.simpleText)),
+        date : new Date(),
+      })
+    }
   }
 
   res.status(200)
