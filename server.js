@@ -737,7 +737,7 @@ app.post('/setinterval', async(req, res) => {
         var now = new Date()
         var result = await db.collection('streamroom').find().toArray()
         for ( var i = 0 ; i < result.length ; i++) {
-          if (now - result[i].started > 24*3600 ) {
+          if (now - result[i].started > 24*3600*1000 ) {
             await db.collection('streamroom').deleteOne({_id : new ObjectId(result[i]._id)})
             num++
           }
